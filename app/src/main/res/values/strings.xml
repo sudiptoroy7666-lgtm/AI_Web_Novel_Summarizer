@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WebNovel Summarizer</string>
+
+    <!-- MainActivity -->
+    <string name="search_hint">Search or enter URL</string>
+    <string name="btn_go">Go</string>
+    <string name="btn_back">Back</string>
+    <string name="btn_forward">Forward</string>
+    <string name="btn_bookmark">Bookmarks</string>
+    <string name="btn_history">History</string>
+    <string name="btn_library">Library</string>
+    <string name="btn_bookmark_page">Bookmark this page</string>
+    <string name="btn_summarize">Summarize</string>
+
+    <!-- Menu Items -->
+    <string name="menu_save_summary">Save Summary</string>
+    <string name="menu_text_to_speech">Text to Speech</string>
+    <string name="menu_summary_type">Summary Type</string>
+    <string name="menu_short_summary">Short Summary</string>
+    <string name="menu_detailed_summary">Detailed Summary</string>
+    <string name="menu_very_detailed_summary">Very Detailed Summary</string>
+
+    <!-- Activity Titles -->
+    <string name="title_summary">Summary</string>
+    <string name="title_history">History</string>
+    <string name="title_bookmarks">Bookmarks</string>
+    <string name="title_library">Library</string>
+    <string name="title_novel_structure">Save Summary</string>
+
+    <!-- Dialog Messages -->
+    <string name="dialog_delete_all_history">Are you sure you want to delete all history?</string>
+    <string name="dialog_delete_all_bookmarks">Are you sure you want to delete all bookmarks?</string>
+    <string name="dialog_delete_item">Are you sure you want to delete this item?</string>
+    <string name="btn_yes">Yes</string>
+    <string name="btn_no">No</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_edit">Edit</string>
+    <string name="btn_delete">Delete</string>
+
+    <!-- Toast Messages -->
+    <string name="toast_bookmarked">Page bookmarked successfully</string>
+    <string name="toast_bookmark_removed">Bookmark removed</string>
+    <string name="toast_history_cleared">History cleared</string>
+    <string name="toast_bookmarks_cleared">Bookmarks cleared</string>
+    <string name="toast_summary_saved">Summary saved successfully</string>
+    <string name="toast_loading_summary">Generating summary...</string>
+    <string name="toast_error">An error occurred</string>
+    <string name="toast_no_internet">No internet connection</string>
+    <string name="toast_content_extracted">Content extracted successfully</string>
+
+    <!-- Empty States -->
+    <string name="empty_history">No browsing history yet</string>
+    <string name="empty_bookmarks">No bookmarks yet</string>
+    <string name="empty_library">No saved summaries yet</string>
+    <string name="empty_volumes">No volumes yet</string>
+    <string name="empty_chapters">No chapters yet</string>
+
+    <!-- Novel Structure -->
+    <string name="hint_novel_name">Novel Name</string>
+    <string name="hint_volume_name">Volume Name</string>
+    <string name="hint_chapter_name">Chapter Name</string>
+    <string name="btn_add_novel">Add Novel</string>
+    <string name="btn_add_volume">Add Volume</string>
+    <string name="btn_add_chapter">Add Chapter</string>
+</resources>
