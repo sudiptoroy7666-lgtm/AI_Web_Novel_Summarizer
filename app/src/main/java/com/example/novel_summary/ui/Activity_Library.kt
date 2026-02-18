@@ -1,5 +1,6 @@
 package com.example.novel_summary.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.activity.viewModels
@@ -9,6 +10,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.novel_summary.R
 import com.example.novel_summary.data.model.Novel
+import com.example.novel_summary.data.model.NovelWithStats
 import com.example.novel_summary.databinding.ActivityLibraryBinding
 import com.example.novel_summary.ui.adapter.LibraryAdapter
 import com.example.novel_summary.ui.viewmodel.LibraryViewModel
@@ -55,17 +57,19 @@ class Activity_Library : AppCompatActivity() {
         }
     }
 
+    // ui/Activity_Library.kt - UPDATE setupRecyclerView()
     private fun setupRecyclerView() {
         adapter = LibraryAdapter(
-            onItemClick = { novel ->
-                // Navigate to Volume/Chapter list for this novel
-                val intent = android.content.Intent(this, NovelDetailActivity::class.java).apply {
-                    putExtra("NOVEL_ID", novel.id)
-                    putExtra("NOVEL_NAME", novel.name)
+            onItemClick = { novelWithStats ->
+                val intent = Intent(this, NovelDetailActivity::class.java).apply {
+                    putExtra("NOVEL_ID", novelWithStats.id)  // Use id directly from POJO
+                    putExtra("NOVEL_NAME", novelWithStats.name)
                 }
                 startActivity(intent)
             },
-            onItemLongClick = { novel ->
+            onItemLongClick = { novelWithStats ->
+                // Convert back to Novel for deletion/update
+                val novel = Novel(id = novelWithStats.id, name = novelWithStats.name)
                 showNovelOptionsDialog(novel)
                 true
             }
@@ -74,6 +78,8 @@ class Activity_Library : AppCompatActivity() {
         binding.rvLibrary.layoutManager = LinearLayoutManager(this)
         binding.rvLibrary.adapter = adapter
     }
+
+
 
     private fun setupAddButton() {
         binding.btnAddNovel.setOnClickListener {
@@ -94,20 +100,19 @@ class Activity_Library : AppCompatActivity() {
 
     private fun observeLibrary() {
         libraryJob = CoroutineScope(Dispatchers.Main).launch {
-            viewModel.getAllNovels().collect { novelList ->
+            viewModel.allNovels.collect { novelList ->  // Now receives NovelWithStats
                 updateUI(novelList)
             }
         }
     }
-
-    private fun updateUI(novelList: List<Novel>) {
+    private fun updateUI(novelList: List<NovelWithStats>) {  // CHANGED PARAMETER TYPE
         if (novelList.isEmpty()) {
             binding.tvEmptyLibrary.isVisible = true
             binding.rvLibrary.isVisible = false
         } else {
             binding.tvEmptyLibrary.isVisible = false
             binding.rvLibrary.isVisible = true
-            adapter.submitList(novelList)
+            adapter.submitList(novelList)  // Adapter now expects NovelWithStats
         }
     }
 

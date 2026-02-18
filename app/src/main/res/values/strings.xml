@@ -81,6 +81,7 @@
         <string name="exit_app_message">Are you sure you want to exit the app?</string>
         <string name="btn_exit">Exit</string>
     <string name="home">Home</string>
+    <string name="toggle_dark_mode">Toggle Dark Mode</string>
 
 
 </resources>

@@ -1,5 +1,6 @@
 package com.example.novel_summary.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.activity.viewModels
@@ -60,18 +61,24 @@ class NovelDetailActivity : AppCompatActivity() {
         }
     }
 
+    // ui/NovelDetailActivity.kt - UPDATE setupRecyclerView()
     private fun setupRecyclerView() {
         adapter = VolumeAdapter(
-            onItemClick = { volume ->
-                // Navigate to Chapter list for this volume
-                val intent = android.content.Intent(this, VolumeDetailActivity::class.java).apply {
-                    putExtra("VOLUME_ID", volume.id)
-                    putExtra("VOLUME_NAME", volume.volumeName)
+            onItemClick = { volumeWithStats ->
+                val intent = Intent(this, VolumeDetailActivity::class.java).apply {
+                    putExtra("VOLUME_ID", volumeWithStats.id)
+                    putExtra("VOLUME_NAME", volumeWithStats.volumeName)
                     putExtra("NOVEL_ID", novelId)
                 }
                 startActivity(intent)
             },
-            onItemLongClick = { volume ->
+            onItemLongClick = { volumeWithStats ->
+                // Convert back to Volume for operations
+                val volume = Volume(
+                    id = volumeWithStats.id,
+                    novelId = volumeWithStats.novelId,
+                    volumeName = volumeWithStats.volumeName
+                )
                 showVolumeOptionsDialog(volume)
                 true
             }
@@ -80,7 +87,6 @@ class NovelDetailActivity : AppCompatActivity() {
         binding.rvLibrary.layoutManager = LinearLayoutManager(this)
         binding.rvLibrary.adapter = adapter
     }
-
     private fun setupAddButton() {
         binding.btnAddNovel.setImageResource(android.R.drawable.ic_input_add)
         binding.btnAddNovel.contentDescription = "Add Volume"
@@ -91,7 +97,7 @@ class NovelDetailActivity : AppCompatActivity() {
 
     private fun observeVolumes() {
         volumeJob = CoroutineScope(Dispatchers.Main).launch {
-            viewModel.getVolumesByNovelId(novelId).collect { volumeList ->
+            viewModel.getVolumesWithStats(novelId).collect { volumeList ->  // Uses new method
                 if (volumeList.isEmpty()) {
                     binding.tvEmptyLibrary.text = getString(R.string.empty_volumes)
                     binding.tvEmptyLibrary.isVisible = true
@@ -99,11 +105,14 @@ class NovelDetailActivity : AppCompatActivity() {
                 } else {
                     binding.tvEmptyLibrary.isVisible = false
                     binding.rvLibrary.isVisible = true
-                    adapter.submitList(volumeList)
+
+                    // Update adapter type to accept VolumeWithStats
+                    (binding.rvLibrary.adapter as? VolumeAdapter)?.submitList(volumeList)
                 }
             }
         }
     }
+
 
     private fun showAddVolumeDialog() {
         val editText = androidx.appcompat.widget.AppCompatEditText(this).apply {

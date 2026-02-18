@@ -1,3 +1,4 @@
+// ui/adapter/VolumeAdapter.kt - UPDATED
 package com.example.novel_summary.ui.adapter
 
 import android.view.LayoutInflater
@@ -6,14 +7,14 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.novel_summary.R
-import com.example.novel_summary.data.model.Volume
+import com.example.novel_summary.data.model.VolumeWithStats
 
 class VolumeAdapter(
-    private val onItemClick: (Volume) -> Unit,
-    private val onItemLongClick: (Volume) -> Boolean
+    private val onItemClick: (VolumeWithStats) -> Unit,
+    private val onItemLongClick: (VolumeWithStats) -> Boolean
 ) : RecyclerView.Adapter<VolumeAdapter.VolumeViewHolder>() {
 
-    private val volumeList = mutableListOf<Volume>()
+    private val volumeList = mutableListOf<VolumeWithStats>()
 
     class VolumeViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val volumeNameTextView: TextView = view.findViewById(R.id.tvNovelName)
@@ -30,7 +31,7 @@ class VolumeAdapter(
         val volume = volumeList[position]
 
         holder.volumeNameTextView.text = volume.volumeName
-        holder.chapterCountTextView.text = "Loading chapters..."
+        holder.chapterCountTextView.text = "${volume.chapterCount} chapter${if (volume.chapterCount != 1) "s" else ""}"
 
         holder.itemView.setOnClickListener { onItemClick(volume) }
         holder.itemView.setOnLongClickListener {
@@ -41,7 +42,7 @@ class VolumeAdapter(
 
     override fun getItemCount() = volumeList.size
 
-    fun submitList(volumes: List<Volume>) {
+    fun submitList(volumes: List<VolumeWithStats>) {
         volumeList.clear()
         volumeList.addAll(volumes)
         notifyDataSetChanged()
@@ -52,8 +53,5 @@ class VolumeAdapter(
         notifyDataSetChanged()
     }
 
-    // Add this method to access items by position
-    fun getItem(position: Int): Volume {
-        return volumeList[position]
-    }
+    fun getItem(position: Int): VolumeWithStats = volumeList[position]
 }

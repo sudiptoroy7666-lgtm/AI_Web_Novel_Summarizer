@@ -3,17 +3,38 @@ package com.example.novel_summary.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.novel_summary.data.AppDatabase
 import com.example.novel_summary.data.model.Novel
 import com.example.novel_summary.data.model.Volume
 import com.example.novel_summary.data.model.Chapter
+import com.example.novel_summary.data.model.NovelWithStats
+import com.example.novel_summary.data.model.VolumeWithStats
 import com.example.novel_summary.data.repository.SummaryRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class LibraryViewModel(application: Application) : AndroidViewModel(application) {
 
     private val summaryRepository: SummaryRepository
+    private val novelDao = AppDatabase.getDatabase(application).novelDao()
+    private val volumeDao = AppDatabase.getDatabase(application).volumeDao()
+    private val chapterDao = AppDatabase.getDatabase(application).chapterDao()
 
+    // Novels with volume counts - NOW WORKS WITH PROPER MAPPING
+    val allNovels: StateFlow<List<NovelWithStats>> = novelDao.getAllNovelsWithStats()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Volumes with chapter counts
+    fun getVolumesWithStats(novelId: Long): StateFlow<List<VolumeWithStats>> {
+        return volumeDao.getVolumesWithStatsByNovelId(novelId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
+
+    // Novels with volume counts
     init {
         val database = com.example.novel_summary.App.database
         summaryRepository = SummaryRepository(

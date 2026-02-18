@@ -65,22 +65,6 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
         val providers = mutableListOf<ApiProvider>()
 
         // ✅ PRIMARY: Cerebras (Ultra-fast, reliable)
-        if (BuildConfig.GROQ_API_KEY_PRIMARY.isNotBlank()) {
-            providers.add(
-                ApiProvider(
-                    name = "Groq Primary (70B)",
-                    apiKey = BuildConfig.GROQ_API_KEY_PRIMARY,
-                    model = BuildConfig.GROQ_MODEL_PRIMARY,
-                    baseUrl = BuildConfig.GROQ_BASE_URL,
-                    maxChars = BuildConfig.MAX_CONTENT_PRIMARY,
-                    maxChunks = 3,
-                    chunkDelayMs = 3000
-                )
-            )
-        }
-
-
-        // FALLBACK: Groq Primary
         if (BuildConfig.CEREBRAS_API_KEY.isNotBlank()) {
             providers.add(
                 ApiProvider(
@@ -91,6 +75,24 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
                     maxChars = BuildConfig.MAX_CONTENT_CEREBRAS,
                     maxChunks = 6,
                     chunkDelayMs = 500  // Cerebras is VERY fast
+                )
+            )
+        }
+
+
+
+        // FALLBACK: Groq Primary
+
+        if (BuildConfig.GROQ_API_KEY_PRIMARY.isNotBlank()) {
+            providers.add(
+                ApiProvider(
+                    name = "Groq Primary (70B)",
+                    apiKey = BuildConfig.GROQ_API_KEY_PRIMARY,
+                    model = BuildConfig.GROQ_MODEL_PRIMARY,
+                    baseUrl = BuildConfig.GROQ_BASE_URL,
+                    maxChars = BuildConfig.MAX_CONTENT_PRIMARY,
+                    maxChunks = 3,
+                    chunkDelayMs = 3000
                 )
             )
         }

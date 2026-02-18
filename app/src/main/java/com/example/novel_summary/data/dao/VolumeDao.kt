@@ -3,6 +3,7 @@ package com.example.novel_summary.data.dao
 
 import androidx.room.*
 import com.example.novel_summary.data.model.Volume
+import com.example.novel_summary.data.model.VolumeWithStats
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -37,4 +38,18 @@ interface VolumeDao {
 
     @Query("DELETE FROM volumes_table")
     suspend fun deleteAllVolumes()
+
+    @Query("""
+        SELECT 
+            v.id AS id,
+            v.novelId AS novelId,
+            v.volumeName AS volumeName,
+            COUNT(c.id) AS chapter_count
+        FROM volumes_table v
+        LEFT JOIN chapters_table c ON v.id = c.volumeId
+        WHERE v.novelId = :novelId
+        GROUP BY v.id, v.novelId, v.volumeName
+        ORDER BY v.volumeName ASC
+    """)
+    fun getVolumesWithStatsByNovelId(novelId: Long): Flow<List<VolumeWithStats>>  // ✅ kotlinx.coroutines.flow.Flow
 }

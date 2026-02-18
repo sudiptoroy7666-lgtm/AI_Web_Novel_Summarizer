@@ -12,35 +12,49 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@drawable/applogo_vector"
+        android:label="AI Web Novel Summarizer"
+        android:roundIcon="@drawable/applogo_vector"
         android:supportsRtl="true"
         android:theme="@style/Theme.WebNovelSummarizer">
-        <activity
-            android:name=".ui.ChapterDetailActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.VolumeDetailActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.NovelDetailActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.Activity_Library"
-            android:exported="false" />
-        <activity
-            android:name=".ui.Activity_Boolmarks"
-            android:exported="false" />
-        <activity
-            android:name=".ui.Activity_History"
-            android:exported="false" />
+        <!-- Summary Activity (preserves TTS state & summary content) -->
         <activity
             android:name=".ui.ActivitySummary"
-            android:exported="false" />
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize" />
+
+        <!-- Library hierarchy activities -->
+        <activity
+            android:name=".ui.Activity_Library"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize" />
+        <activity
+            android:name=".ui.NovelDetailActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize" />
+        <activity
+            android:name=".ui.VolumeDetailActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize" />
+        <activity
+            android:name=".ui.ChapterDetailActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize" />
+
+        <!-- History/Bookmarks activities -->
+        <activity
+            android:name=".ui.Activity_History"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize" />
+        <activity
+            android:name=".ui.Activity_Boolmarks"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize" />
         <activity
             android:name=".ui.MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize" >
+            >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

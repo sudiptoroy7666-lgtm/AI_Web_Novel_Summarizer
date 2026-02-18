@@ -25,6 +25,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.util.*
+import android.content.res.Configuration          // Required for Configuration parameter
+import android.view.WindowManager                  // Required for window.setSoftInputMode (MainActivity only)
 
 class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
 
@@ -54,6 +56,8 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
         loadLastSummaryType() // FIXED: Load last summary type
         validateContent()
     }
+
+
 
     private fun setupToolbar() {
         setSupportActionBar(binding.toolbar)
@@ -197,6 +201,19 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         ToastUtils.showError(this@ActivitySummary, errorMessage)
     }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+        // Only adjust UI layout - DO NOT restart TTS (it continues automatically)
+        // Optional: Update button text if needed
+        if (isSpeaking) {
+            binding.btnTextToSpeech.text = "Stop"
+        } else {
+            binding.btnTextToSpeech.text = "Text to Speech"
+        }
+    }
+
 
     private fun changeSummaryType(type: String) {
         if (!NetworkUtils.isNetworkAvailable(this)) {
