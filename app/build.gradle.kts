@@ -15,7 +15,7 @@ android {
         minSdk = 28
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -45,11 +45,14 @@ android {
         buildConfigField("int", "MAX_CONTENT_FALLBACK", "450000")  // ~112K tokens (safe margin)
 
 
-                // Cerebras Configuration (ultra-fast inference)
-                val cerebrasApiKey = project.findProperty("CEREBRAS_API_KEY") as? String ?: ""
-                buildConfigField("String", "CEREBRAS_API_KEY", "\"$cerebrasApiKey\"")
-                buildConfigField("String", "CEREBRAS_BASE_URL", "\"https://api.cerebras.ai/v1/\"")
-                buildConfigField("String", "CEREBRAS_MODEL", "\"llama-3.3-70b\"")
+                // Cerebras Configuration (ultra-fast inference
+
+        val cerebrasApiKey = project.findProperty("CEREBRAS_API_KEY") as? String ?: ""
+
+        buildConfigField("String", "CEREBRAS_API_KEY", "\"$cerebrasApiKey\"")
+        buildConfigField("String", "CEREBRAS_BASE_URL", "\"https://api.cerebras.ai/v1/\"")
+// Updated model string below:
+        buildConfigField("String", "CEREBRAS_MODEL", "\"gpt-oss-120b\"")
 
 
         

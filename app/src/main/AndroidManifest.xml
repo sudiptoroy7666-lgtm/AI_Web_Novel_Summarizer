@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
+
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -16,6 +17,7 @@
         android:label="AI Web Novel Summarizer"
         android:roundIcon="@drawable/applogo_vector"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@style/Theme.WebNovelSummarizer">
         <!-- Summary Activity (preserves TTS state & summary content) -->
         <activity

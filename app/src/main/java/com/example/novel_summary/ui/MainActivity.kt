@@ -140,11 +140,9 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    /**
-     * Re-applies the current theme to the live WebView page.
-     * Skips the homepage (it has its own dark HTML).
-     */
     private fun applyCurrentTheme() {
+        updateWebViewThemeSettings()
+        
         val currentUrl = binding.webView.url ?: return
         if (isHomePageUrl(currentUrl)) return  // homepage manages its own style
 
@@ -153,6 +151,16 @@ class MainActivity : AppCompatActivity() {
         } else {
             WebViewUtils.removeDarkMode(binding.webView)
             WebViewUtils.injectAdBlockOnly(binding.webView)
+        }
+    }
+
+    private fun updateWebViewThemeSettings() {
+        if (isDarkMode) {
+            binding.webView.setBackgroundColor(android.graphics.Color.parseColor("#121212"))
+            WebViewUtils.setDarkModeConfig(binding.webView, true)
+        } else {
+            binding.webView.setBackgroundColor(android.graphics.Color.parseColor("#FFFFFF"))
+            WebViewUtils.setDarkModeConfig(binding.webView, false)
         }
     }
 
@@ -168,7 +176,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupWebView() {
         WebViewUtils.configureWebView(binding.webView)
-        binding.webView.setBackgroundColor(0xFF121212.toInt())
+        updateWebViewThemeSettings()
 
         binding.webView.webViewClient = object : WebViewClient() {
 
@@ -196,14 +204,14 @@ class MainActivity : AppCompatActivity() {
                 val isHome = isHomePageUrl(url)
 
                 // Instantly dark background on non-home pages, before content paints
-                if (!isHome && isDarkMode) {
+                if (!isHome) {
+                    val css = if (isDarkMode) "html, body { background-color: #121212 !important; color: #e0e0e0 !important; }"
+                              else "html, body { background-color: #ffffff !important; color: #121212 !important; }"
                     view?.evaluateJavascript("""
                         (function(){
-                            document.documentElement.style.backgroundColor='#121212';
-                            if(document.body){
-                                document.body.style.backgroundColor='#121212';
-                                document.body.style.color='#e0e0e0';
-                            }
+                            var s = document.createElement('style');
+                            s.innerHTML = '$css';
+                            document.head ? document.head.appendChild(s) : document.documentElement.appendChild(s);
                         })();
                     """.trimIndent()) {}
                 }
@@ -689,78 +697,72 @@ class MainActivity : AppCompatActivity() {
             <style>
                 * { margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent; }
                 :root {
-                    --primary:#00CED1;--secondary:#008B8B;--accent:#87CEEB;
-                    --dark:#04080C;--light:#E0FFFF;--gray:#7FB3B3;
-                    --card-shadow:0 8px 20px rgba(0,206,209,0.15);
+                    --primary:#06B6D4;--secondary:#0891B2;--accent:#22D3EE;
+                    --dark:#0C4A6E;--light:#FFFFFF;--gray:#67E8F9;
+                    --card-shadow:0 8px 20px rgba(6,182,212,0.18);
                     --transition:all 0.3s cubic-bezier(0.25,0.8,0.25,1);
                 }
                 body {
                     font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-                    background:linear-gradient(135deg,#04080C 0%,#0A1A1F 50%,#041210 100%);
+                    background:linear-gradient(135deg,#0C4A6E 0%,#075985 40%,#0369A1 100%);
                     color:var(--light);min-height:100vh;
                     padding:16px;padding-bottom:30px;overflow-x:hidden;
                     position:relative;
                 }
-                /* Arctic glow effects */
                 body::before {
-                    content:'';position:fixed;top:-20%;left:-20%;width:60%;height:60%;
-                    background:radial-gradient(circle,rgba(0,206,209,0.12) 0%,transparent 70%);
-                    pointer-events:none;z-index:0;
-                }
-                body::after {
-                    content:'';position:fixed;bottom:-25%;right:-25%;width:70%;height:70%;
-                    background:radial-gradient(circle,rgba(135,206,235,0.1) 0%,transparent 70%);
-                    pointer-events:none;z-index:0;
+                    content:'';position:fixed;top:0;left:0;right:0;bottom:0;
+                    background:url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+                    opacity:0.03;pointer-events:none;z-index:0;
                 }
                 .container{max-width:100%;margin:0 auto;position:relative;z-index:1;}
                 .header{text-align:center;padding:24px 16px 16px;margin-bottom:24px;}
                 .app-icon {
-                    width:72px;height:72px;
-                    background:linear-gradient(145deg,#0A1A1F,#0D2A30);
-                    border-radius:24px;display:flex;align-items:center;justify-content:center;
-                    margin:0 auto 16px;box-shadow:0 6px 20px rgba(0,206,209,0.35);
-                    animation:float 3s ease-in-out infinite;
-                    overflow:hidden;border:1px solid rgba(0,206,209,0.3);
-                }
-                .app-icon span{display:none;}
-                h1 {
-                    font-size:28px;font-weight:800;
-                    background:linear-gradient(to right,#E0FFFF,#00CED1);
-                    -webkit-background-clip:text;background-clip:text;
-                    color:transparent;margin-bottom:8px;letter-spacing:-0.5px;
-                }
-                .subtitle{color:var(--gray);font-size:16px;line-height:1.5;max-width:90%;margin:0 auto;}
+            width:72px;height:72px;
+            background:linear-gradient(145deg,#1E293B,#334155);
+            border-radius:24px;display:flex;align-items:center;justify-content:center;
+            margin:0 auto 16px;box-shadow:0 6px 24px rgba(59,130,246,0.4);
+            animation:float 3s ease-in-out infinite;
+            overflow:hidden;border:1px solid rgba(59,130,246,0.3);
+        }
+        .app-icon span{display:none;}
+        h1 {
+            font-size:28px;font-weight:800;
+            background:linear-gradient(to right,#FFFFFF,#60A5FA);
+            -webkit-background-clip:text;background-clip:text;
+            color:transparent;margin-bottom:8px;letter-spacing:-0.5px;
+        }
+                .subtitle{color:#A5F3FC;font-size:16px;line-height:1.5;max-width:90%;margin:0 auto;}
                 .search-container {
-                    background:rgba(4,8,12,0.85);border-radius:20px;padding:16px;
+                    background:rgba(12,74,110,0.6);border-radius:20px;padding:16px;
                     box-shadow:var(--card-shadow);margin-bottom:28px;
-                    border:1px solid rgba(0,206,209,0.25);
-                    backdrop-filter:blur(10px);
+                    border:1px solid rgba(6,182,212,0.25);
+                    backdrop-filter:blur(12px);
                 }
-                .search-title{display:flex;align-items:center;margin-bottom:14px;color:var(--primary);font-weight:600;font-size:15px;}
+                .search-title{display:flex;align-items:center;margin-bottom:14px;color:#22D3EE;font-weight:600;font-size:15px;}
                 .search-title i{margin-right:8px;font-size:18px;}
-                .search-box{display:flex;background:rgba(10,26,31,0.95);border-radius:16px;overflow:hidden;border:1px solid rgba(0,206,209,0.3);}
-                #searchInput{flex:1;background:transparent;border:none;color:white;padding:14px 16px;font-size:16px;outline:none;caret-color:var(--primary);}
-                #searchInput::placeholder{color:var(--gray);opacity:0.8;}
-                .search-btn{background:linear-gradient(135deg,#00CED1,#008B8B);color:white;border:none;width:56px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;}
-                .search-btn:hover{background:linear-gradient(135deg,#00D4D4,#009B9B);}
+                .search-box{display:flex;background:rgba(255,255,255,0.95);border-radius:16px;overflow:hidden;border:1px solid rgba(6,182,212,0.3);}
+                #searchInput{flex:1;background:transparent;border:none;color:#0C4A6E;padding:14px 16px;font-size:16px;outline:none;caret-color:var(--primary);}
+                #searchInput::placeholder{color:#0891B2;opacity:0.7;}
+                .search-btn{background:linear-gradient(135deg,#06B6D4,#0891B2);color:white;border:none;width:56px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;}
+                .search-btn:hover{background:linear-gradient(135deg,#22D3EE,#06B6D4);}
                 .section-title{display:flex;align-items:center;justify-content:space-between;margin:28px 0 16px;font-size:20px;font-weight:700;}
-                .section-title span{background:linear-gradient(to right,var(--primary),#B0E0E6);-webkit-background-clip:text;background-clip:text;color:transparent;}
+                .section-title span{background:linear-gradient(to right,#FFFFFF,#22D3EE);-webkit-background-clip:text;background-clip:text;color:transparent;}
                 .quick-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px;}
-                .action-card{background:rgba(4,8,12,0.85);border-radius:18px;padding:18px 12px;text-align:center;transition:var(--transition);border:1px solid rgba(0,206,209,0.15);cursor:pointer;backdrop-filter:blur(10px);}
-                .action-card:active{transform:scale(0.97);border-color:rgba(0,206,209,0.4);}
-                .action-icon{width:56px;height:56px;background:linear-gradient(135deg,rgba(0,206,209,0.2),rgba(0,139,139,0.15));border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:24px;border:1px solid rgba(0,206,209,0.2);}
-                .action-title{font-weight:600;font-size:15px;margin-bottom:4px;color:var(--light);}
-                .action-desc{color:var(--gray);font-size:13px;line-height:1.4;}
+                .action-card{background:rgba(255,255,255,0.1);border-radius:18px;padding:18px 12px;text-align:center;transition:var(--transition);border:1px solid rgba(6,182,212,0.2);cursor:pointer;backdrop-filter:blur(8px);}
+                .action-card:active{transform:scale(0.97);background:rgba(255,255,255,0.18);}
+                .action-icon{width:56px;height:56px;background:linear-gradient(135deg,rgba(6,182,212,0.3),rgba(8,145,178,0.15));border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:24px;border:1px solid rgba(6,182,212,0.25);}
+                .action-title{font-weight:600;font-size:15px;margin-bottom:4px;color:#FFFFFF;}
+                .action-desc{color:#A5F3FC;font-size:13px;line-height:1.4;}
                 .sites-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
-                .site-card{background:rgba(4,8,12,0.85);border-radius:18px;padding:18px;transition:var(--transition);border:1px solid rgba(0,206,209,0.12);cursor:pointer;position:relative;overflow:hidden;backdrop-filter:blur(10px);}
-                .site-card:active{transform:scale(0.98);border-color:rgba(0,206,209,0.35);}
-                .site-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(0,206,209,0.5),transparent);opacity:0;transition:opacity 0.3s;}
+                .site-card{background:rgba(255,255,255,0.1);border-radius:18px;padding:18px;transition:var(--transition);border:1px solid rgba(6,182,212,0.18);cursor:pointer;position:relative;overflow:hidden;backdrop-filter:blur(8px);}
+                .site-card:active{transform:scale(0.98);background:rgba(255,255,255,0.16);}
+                .site-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(34,211,238,0.8),transparent);opacity:0;transition:opacity 0.3s;}
                 .site-card:active::before{opacity:1;}
-                .site-name{font-weight:700;font-size:17px;margin-bottom:6px;display:flex;align-items:center;color:var(--light);}
-                .site-name i{margin-right:10px;color:var(--primary);font-size:20px;}
-                .site-desc{color:var(--gray);font-size:14px;line-height:1.5;}
-                .footer{text-align:center;margin-top:30px;color:var(--gray);font-size:14px;padding:20px;border-top:1px solid rgba(0,206,209,0.15);}
-                .highlight{color:var(--primary);font-weight:600;}
+                .site-name{font-weight:700;font-size:17px;margin-bottom:6px;display:flex;align-items:center;color:#FFFFFF;}
+                .site-name i{margin-right:10px;color:#22D3EE;font-size:20px;}
+                .site-desc{color:#A5F3FC;font-size:14px;line-height:1.5;}
+                .footer{text-align:center;margin-top:30px;color:#67E8F9;font-size:14px;padding:20px;border-top:1px solid rgba(6,182,212,0.2);}
+                .highlight{color:#FFFFFF;font-weight:600;}
                 @keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)}}
                 @media(min-width:480px){.sites-grid{grid-template-columns:repeat(3,1fr);}}
                 @media(min-width:768px){body{padding:24px;}.container{max-width:720px;}h1{font-size:36px;}.quick-actions{grid-template-columns:repeat(4,1fr);}}
@@ -770,46 +772,36 @@ class MainActivity : AppCompatActivity() {
             <div class="container">
                 <div class="header">
                     <div class="app-icon">
-                        <svg viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg" width="72" height="72">
-                            <circle cx="54" cy="54" r="54" fill="#0A1A1F"/>
-                            <circle cx="54" cy="54" r="46" fill="#0D2A30"/>
-                            <!-- Left page -->
-                            <path d="M22,35 C22,33.3 23.3,32 25,32 L51,32 L51,76 L25,76 C23.3,76 22,74.7 22,73 Z" fill="#E0FFFF"/>
-                            <!-- Right page -->
-                            <path d="M57,32 L83,32 C84.7,32 86,33.3 86,35 L86,73 C86,74.7 84.7,76 83,76 L57,76 Z" fill="#B0E0E6"/>
-                            <!-- Spine -->
-                            <rect x="51" y="30" width="6" height="48" fill="#00CED1"/>
-                            <!-- Top shadow bands -->
-                            <rect x="22" y="32" width="29" height="3" fill="#008B8B" opacity="0.4"/>
-                            <rect x="57" y="32" width="29" height="3" fill="#008B8B" opacity="0.4"/>
-                            <!-- Center neural node -->
-                            <circle cx="36" cy="54" r="5" fill="#00CED1"/>
-                            <!-- Satellite nodes -->
-                            <circle cx="27" cy="43" r="3.5" fill="#87CEEB"/>
-                            <circle cx="27" cy="65" r="3.5" fill="#87CEEB"/>
-                            <circle cx="44" cy="42" r="3"   fill="#48D1CC"/>
-                            <circle cx="44" cy="66" r="3"   fill="#48D1CC"/>
-                            <!-- Neural connections -->
-                            <line x1="27" y1="43" x2="31" y2="54" stroke="#00CED1" stroke-width="1.2"/>
-                            <line x1="27" y1="65" x2="31" y2="54" stroke="#00CED1" stroke-width="1.2"/>
-                            <line x1="41" y1="54" x2="44" y2="42" stroke="#00CED1" stroke-width="1.2"/>
-                            <line x1="41" y1="54" x2="44" y2="66" stroke="#00CED1" stroke-width="1.2"/>
-                            <line x1="27" y1="43" x2="44" y2="42" stroke="#87CEEB" stroke-width="0.8"/>
-                            <line x1="27" y1="65" x2="44" y2="66" stroke="#87CEEB" stroke-width="0.8"/>
-                            <!-- Right page text lines -->
-                            <rect x="62" y="42" width="18" height="2" fill="#5F9EA0"/>
-                            <rect x="62" y="48" width="18" height="2" fill="#5F9EA0"/>
-                            <rect x="62" y="54" width="14" height="2" fill="#5F9EA0"/>
-                            <rect x="62" y="60" width="18" height="2" fill="#5F9EA0"/>
-                            <rect x="62" y="66" width="11" height="2" fill="#5F9EA0"/>
-                            <!-- Ice crystal star -->
-                            <polygon points="78,60 79.2,63.6 83,63.6 80,65.8 81.2,69.4 78,67.2 74.8,69.4 76,65.8 73,63.6 76.8,63.6" fill="#00CED1"/>
-                            <!-- Top floating dots -->
-                            <circle cx="54" cy="26" r="2"   fill="#48D1CC"/>
-                            <circle cx="46" cy="23" r="1.5" fill="#00CED1"/>
-                            <circle cx="62" cy="23" r="1.5" fill="#87CEEB"/>
-                        </svg>
-                    </div>
+                <svg viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg" width="72" height="72">
+                    <circle cx="54" cy="54" r="54" fill="#1E293B"/>
+                    <circle cx="54" cy="54" r="46" fill="#334155"/>
+                    <path d="M22,35 C22,33.3 23.3,32 25,32 L51,32 L51,76 L25,76 C23.3,76 22,74.7 22,73 Z" fill="#F8FAFC"/>
+                    <path d="M57,32 L83,32 C84.7,32 86,33.3 86,35 L86,73 C86,74.7 84.7,76 83,76 L57,76 Z" fill="#E2E8F0"/>
+                    <rect x="51" y="30" width="6" height="48" fill="#3B82F6"/>
+                    <rect x="22" y="32" width="29" height="3" fill="#1D4ED8" opacity="0.3"/>
+                    <rect x="57" y="32" width="29" height="3" fill="#1D4ED8" opacity="0.3"/>
+                    <circle cx="36" cy="54" r="5" fill="#3B82F6"/>
+                    <circle cx="27" cy="43" r="3.5" fill="#60A5FA"/>
+                    <circle cx="27" cy="65" r="3.5" fill="#60A5FA"/>
+                    <circle cx="44" cy="42" r="3" fill="#93C5FD"/>
+                    <circle cx="44" cy="66" r="3" fill="#93C5FD"/>
+                    <line x1="27" y1="43" x2="31" y2="54" stroke="#3B82F6" stroke-width="1.2"/>
+                    <line x1="27" y1="65" x2="31" y2="54" stroke="#3B82F6" stroke-width="1.2"/>
+                    <line x1="41" y1="54" x2="44" y2="42" stroke="#3B82F6" stroke-width="1.2"/>
+                    <line x1="41" y1="54" x2="44" y2="66" stroke="#3B82F6" stroke-width="1.2"/>
+                    <line x1="27" y1="43" x2="44" y2="42" stroke="#60A5FA" stroke-width="0.8"/>
+                    <line x1="27" y1="65" x2="44" y2="66" stroke="#60A5FA" stroke-width="0.8"/>
+                    <rect x="62" y="42" width="18" height="2" fill="#CBD5E1"/>
+                    <rect x="62" y="48" width="18" height="2" fill="#CBD5E1"/>
+                    <rect x="62" y="54" width="14" height="2" fill="#CBD5E1"/>
+                    <rect x="62" y="60" width="18" height="2" fill="#CBD5E1"/>
+                    <rect x="62" y="66" width="11" height="2" fill="#CBD5E1"/>
+                    <polygon points="78,60 79.2,63.6 83,63.6 80,65.8 81.2,69.4 78,67.2 74.8,69.4 76,65.8 73,63.6 76.8,63.6" fill="#3B82F6"/>
+                    <circle cx="54" cy="26" r="2" fill="#93C5FD"/>
+                    <circle cx="46" cy="23" r="1.5" fill="#3B82F6"/>
+                    <circle cx="62" cy="23" r="1.5" fill="#60A5FA"/>
+                </svg>
+            </div>
                     <h1>NovelSummarizer</h1>
                     <p class="subtitle">AI-powered summaries for web novels • Read faster • Never lose your place</p>
                 </div>
@@ -830,7 +822,7 @@ class MainActivity : AppCompatActivity() {
                 <div class="sites-grid">
                     <div class="site-card" onclick="Android.openUrl('https://www.webnovel.com')"><div class="site-name"><i>📖</i> WebNovel</div><div class="site-desc">Official translations & originals</div></div>
                     <div class="site-card" onclick="Android.openUrl('https://www.wuxiaworld.com')"><div class="site-name"><i>⚔️</i> WuxiaWorld</div><div class="site-desc">Chinese fantasy novels</div></div>
-                    <div class="site-card" onclick="Android.openUrl('https://www.royalroad.com')"><div class="site-name"><i>🏰</i> Royal Road</div><div class="site-desc">Web serials & fiction</div></div>
+                    <div class="site-card" onclick="Android.openUrl('https://fictionme.net/')"><div class="site-name"><i>🏰</i> Fiction Me</div><div class="site-desc">Web serials & fiction</div></div>
                     <div class="site-card" onclick="Android.openUrl('https://www.novelupdates.com')"><div class="site-name"><i>🔍</i> Novel Updates</div><div class="site-desc">Novel directory & reviews</div></div>
                     <div class="site-card" onclick="Android.openUrl('https://www.royalroad.com/home')"><div class="site-name"><i>📦</i> Royal Road</div><div class="site-desc">Fantasy web novels</div></div>
                     <div class="site-card" onclick="Android.openUrl('https://www.novelnow.com/')"><div class="site-name"><i>✨</i> Novel Now</div><div class="site-desc">Novels & audio books</div></div>

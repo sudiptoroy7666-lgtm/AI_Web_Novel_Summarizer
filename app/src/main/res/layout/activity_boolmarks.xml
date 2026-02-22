@@ -65,7 +65,7 @@
         android:layout_marginBottom="16dp"
         android:contentDescription="@string/dialog_delete_all_bookmarks"
         android:src="@android:drawable/ic_menu_delete"
-        app:backgroundTint="@color/glass_fill_strong"
+        app:backgroundTint="#729393"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:tint="@color/white" />

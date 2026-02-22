@@ -8,6 +8,7 @@ object UrlUtils {
     private const val GOOGLE_SEARCH_URL = "https://www.google.com/search?q="
 
     fun isValidUrl(input: String): Boolean {
+        if (input.startsWith("http://") || input.startsWith("https://")) return true
         return try {
             URL(input)
             true
