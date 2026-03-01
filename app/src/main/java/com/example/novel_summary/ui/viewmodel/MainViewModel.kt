@@ -16,6 +16,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val bookmarkRepository: BookmarkRepository
     private val summaryRepository: SummaryRepository
 
+
+
     init {
         val database = com.example.novel_summary.App.database
         historyRepository = HistoryRepository(database.historyDao())

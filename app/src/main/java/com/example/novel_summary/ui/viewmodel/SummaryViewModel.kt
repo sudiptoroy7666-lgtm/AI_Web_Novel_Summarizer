@@ -60,75 +60,106 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
     fun deleteVolume(volume: Volume) { viewModelScope.launch { summaryRepository.deleteVolume(volume) } }
     fun deleteChapter(chapter: Chapter) { viewModelScope.launch { summaryRepository.deleteChapter(chapter) } }
 
-    // ============= 3-TIER FALLBACK SYSTEM =============
-    private fun getAvailableProviders(): List<ApiProvider> {
+    // ============= 3-TIER FALLBACK SYSTEM + GEMINI =============
+    private fun getAvailableProviders(chosenProvider: String = "auto"): List<ApiProvider> {
         val providers = mutableListOf<ApiProvider>()
 
-        // ✅ PRIMARY: Cerebras (Ultra-fast, reliable)
-        if (BuildConfig.CEREBRAS_API_KEY.isNotBlank()) {
-            providers.add(
-                ApiProvider(
-                    name = "Cerebras",
-                    apiKey = BuildConfig.CEREBRAS_API_KEY,
-                    model = BuildConfig.CEREBRAS_MODEL,
-                    baseUrl = BuildConfig.CEREBRAS_BASE_URL,
-                    maxChars = BuildConfig.MAX_CONTENT_CEREBRAS,
-                    maxChunks = 6,
-                    chunkDelayMs = 500  // Cerebras is VERY fast
+        // Helper to add providers
+        fun addCerebras() {
+            if (BuildConfig.CEREBRAS_API_KEY.isNotBlank()) {
+                providers.add(
+                    ApiProvider(
+                        name = "Cerebras",
+                        apiKey = BuildConfig.CEREBRAS_API_KEY,
+                        model = BuildConfig.CEREBRAS_MODEL,
+                        baseUrl = BuildConfig.CEREBRAS_BASE_URL,
+                        maxChars = BuildConfig.MAX_CONTENT_CEREBRAS,
+                        maxChunks = 6,
+                        chunkDelayMs = 500  // Cerebras is VERY fast
+                    )
                 )
-            )
+            }
         }
 
-
-
-        // FALLBACK: Groq Primary
-
-        if (BuildConfig.GROQ_API_KEY_PRIMARY.isNotBlank()) {
-            providers.add(
-                ApiProvider(
-                    name = "Groq Primary (70B)",
-                    apiKey = BuildConfig.GROQ_API_KEY_PRIMARY,
-                    model = BuildConfig.GROQ_MODEL_PRIMARY,
-                    baseUrl = BuildConfig.GROQ_BASE_URL,
-                    maxChars = BuildConfig.MAX_CONTENT_PRIMARY,
-                    maxChunks = 3,
-                    chunkDelayMs = 3000
+        fun addGroqPrimary() {
+            if (BuildConfig.GROQ_API_KEY_PRIMARY.isNotBlank()) {
+                providers.add(
+                    ApiProvider(
+                        name = "Groq Primary (70B)",
+                        apiKey = BuildConfig.GROQ_API_KEY_PRIMARY,
+                        model = BuildConfig.GROQ_MODEL_PRIMARY,
+                        baseUrl = BuildConfig.GROQ_BASE_URL,
+                        maxChars = BuildConfig.MAX_CONTENT_PRIMARY,
+                        maxChunks = 3,
+                        chunkDelayMs = 3000
+                    )
                 )
-            )
+            }
         }
 
-        // FALLBACK: Groq Fallback
-        if (BuildConfig.GROQ_API_KEY_FALLBACK.isNotBlank()) {
-            providers.add(
-                ApiProvider(
-                    name = "Groq Fallback (8B)",
-                    apiKey = BuildConfig.GROQ_API_KEY_FALLBACK,
-                    model = BuildConfig.GROQ_MODEL_FALLBACK,
-                    baseUrl = BuildConfig.GROQ_BASE_URL,
-                    maxChars = BuildConfig.MAX_CONTENT_FALLBACK,
-                    maxChunks = 4,
-                    chunkDelayMs = 3000
+        fun addGroqFallback() {
+            if (BuildConfig.GROQ_API_KEY_FALLBACK.isNotBlank()) {
+                providers.add(
+                    ApiProvider(
+                        name = "Groq Fallback (8B)",
+                        apiKey = BuildConfig.GROQ_API_KEY_FALLBACK,
+                        model = BuildConfig.GROQ_MODEL_FALLBACK,
+                        baseUrl = BuildConfig.GROQ_BASE_URL,
+                        maxChars = BuildConfig.MAX_CONTENT_FALLBACK,
+                        maxChunks = 4,
+                        chunkDelayMs = 3000
+                    )
                 )
-            )
+            }
+        }
+
+        fun addGemini() {
+            if (BuildConfig.GEMINI_API_KEY.isNotBlank()) {
+                providers.add(
+                    ApiProvider(
+                        name = "Google AI (Gemini)",
+                        apiKey = BuildConfig.GEMINI_API_KEY,
+                        model = BuildConfig.GEMINI_MODEL,
+                        baseUrl = BuildConfig.GEMINI_BASE_URL,
+                        maxChars = BuildConfig.MAX_CONTENT_GEMINI,
+                        maxChunks = 3,
+                        chunkDelayMs = 2000
+                    )
+                )
+            }
+        }
+
+        when (chosenProvider.lowercase()) {
+            "cerebras" -> addCerebras()
+            "groq primary" -> addGroqPrimary()
+            "groq fallback" -> addGroqFallback()
+            "google ai (gemini)" -> addGemini()
+            else -> {
+                // Auto fallback tier
+                addCerebras()
+                addGroqPrimary()
+                addGroqFallback()
+                addGemini()
+            }
         }
 
         return providers
     }
+
     /**
      * PROPER SOLUTION: Hierarchical chunking for complete summaries
-     * 1. If content fits in one request → send it directly
-     * 2. If too large → chunk, summarize each chunk, then combine summaries
+     * 1. If content fits in one request -> send it directly
+     * 2. If too large -> chunk, summarize each chunk, then combine summaries
      */
-    suspend fun generateSummary(content: String, summaryType: String): Result<String> {
+    suspend fun generateSummary(content: String, summaryType: String, chosenProvider: String = "auto"): Result<String> {
 
-
-        val providers = getAvailableProviders()
+        val providers = getAvailableProviders(chosenProvider)
 
         if (providers.isEmpty()) {
-            return Result.failure(Exception("No API keys configured"))
+            return Result.failure(Exception("No API keys configured or selected provider unavailable"))
         }
 
-        Log.i(TAG, "Starting summary generation with ${providers.size} providers")
+        Log.i(TAG, "Starting summary generation with ${providers.size} providers (Selected: $chosenProvider)")
         Log.i(TAG, "Original content length: ${content.length} chars")
 
         // Try each provider

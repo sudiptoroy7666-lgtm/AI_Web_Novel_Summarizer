@@ -44,6 +44,13 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var currentSummaryType: String = "detailed" // Default
     private var currentSummaryText: String = ""
 
+
+    private var pausedChunkIndex = 0
+    private var resumeOffset = 0
+    private var isPaused = false
+    private var pausedCharOffset = 0
+    private var lastRangeStart = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySummaryBinding.inflate(layoutInflater)
@@ -118,6 +125,26 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
         binding.btnSaveSummary.setOnClickListener {
             showSaveSummaryDialog()
         }
+
+        binding.btnChooseAi.setOnClickListener { view ->
+            val popup = android.widget.PopupMenu(this, view)
+            popup.menuInflater.inflate(R.menu.ai_selection_menu, popup.menu)
+            popup.setOnMenuItemClickListener { menuItem ->
+                val chosen = when (menuItem.itemId) {
+                    R.id.menu_ai_auto -> "Auto"
+                    R.id.menu_ai_cerebras -> "Cerebras"
+                    R.id.menu_ai_groq_primary -> "Groq Primary"
+                    R.id.menu_ai_groq_fallback -> "Groq Fallback"
+                    R.id.menu_ai_gemini -> "Google AI (Gemini)"
+                    else -> "Auto"
+                }
+                saveAiSelection(chosen)
+                binding.btnChooseAi.text = chosen // Optional visual feedback
+                ToastUtils.showSuccess(this, "Selected: $chosen")
+                true
+            }
+            popup.show()
+        }
     }
 
     private fun extractIntentData() {
@@ -153,7 +180,8 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
         showLoading(true)
 
         currentSummaryJob = CoroutineScope(Dispatchers.IO).launch {
-            val result = viewModel.generateSummary(extractedContent, currentSummaryType)
+            val chosenAi = loadAiSelection()
+            val result = viewModel.generateSummary(extractedContent, currentSummaryType, chosenAi)
 
             runOnUiThread {
                 showLoading(false)
@@ -189,15 +217,6 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
             else -> "Failed to generate summary: ${error?.message ?: "Unknown error"}"
         }
 
-        // Show specific actionable message
-        if (errorMessage.contains("too long")) {
-            ToastUtils.showError(this@ActivitySummary, errorMessage)
-            // Auto-switch to short summary
-            currentSummaryType = "short"
-            binding.tvSummaryContent.text = "Switching to SHORT summary to handle large content..."
-            generateInitialSummary()
-            return
-        }
 
         ToastUtils.showError(this@ActivitySummary, errorMessage)
     }
@@ -235,11 +254,21 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         if (isSpeaking) {
+            pausedCharOffset = lastRangeStart
+            isPaused = true
             textToSpeech?.stop()
             isSpeaking = false
-            binding.btnTextToSpeech.text = "Text to Speech"
+            binding.btnTextToSpeech.text = "▶ Resume"
         } else {
-            speakText(currentSummaryText)
+            if (isPaused) {
+                resumeOffset = pausedCharOffset  // ← add this
+                val resumeText = currentSummaryText.drop(pausedCharOffset).trimStart()
+                speakText(resumeText)
+            } else {
+                resumeOffset = 0                 // ← add this
+                speakText(currentSummaryText)
+            }
+            isPaused = false
             isSpeaking = true
             binding.btnTextToSpeech.text = "Stop"
         }
@@ -254,15 +283,42 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
 
             override fun onDone(utteranceId: String?) {
                 runOnUiThread {
+                    isPaused = false
+                    pausedCharOffset = 0
                     isSpeaking = false
                     binding.btnTextToSpeech.text = "Text to Speech"
+                    binding.tvSummaryContent.text = currentSummaryText // Clear highlights
                 }
             }
 
             override fun onError(utteranceId: String?) {
                 runOnUiThread {
+                    isPaused = false
+                    pausedCharOffset = 0
                     isSpeaking = false
                     binding.btnTextToSpeech.text = "Text to Speech"
+                    binding.tvSummaryContent.text = currentSummaryText // Clear highlights
+                }
+            }
+
+            override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
+                super.onRangeStart(utteranceId, start, end, frame)
+                lastRangeStart = start + resumeOffset  // ← updated
+                runOnUiThread {
+                    if (isSpeaking) {
+                        try {
+                            val actualStart = start + resumeOffset  // ← add
+                            val actualEnd = end + resumeOffset      // ← add
+                            val spannable = android.text.SpannableString(currentSummaryText)
+                            spannable.setSpan(
+                                android.text.style.BackgroundColorSpan(android.graphics.Color.parseColor("#4022D3EE")),
+                                actualStart,                                      // ← use actualStart
+                                actualEnd.coerceAtMost(currentSummaryText.length), // ← use actualEnd
+                                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                            )
+                            binding.tvSummaryContent.text = spannable
+                        } catch (e: Exception) { }
+                    }
                 }
             }
         })
@@ -429,6 +485,19 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun loadLastSummaryType() {
         val prefs = getSharedPreferences("SummaryPrefs", Context.MODE_PRIVATE)
         currentSummaryType = prefs.getString("last_summary_type", "detailed") ?: "detailed"
+        
+        binding.btnChooseAi.text = loadAiSelection()
+    }
+    
+    // NEW: Save and load AI selection
+    private fun saveAiSelection(aiName: String) {
+        val prefs = getSharedPreferences("SummaryPrefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("last_ai_selection", aiName).apply()
+    }
+    
+    private fun loadAiSelection(): String {
+        val prefs = getSharedPreferences("SummaryPrefs", Context.MODE_PRIVATE)
+        return prefs.getString("last_ai_selection", "Auto") ?: "Auto"
     }
 
     override fun onDestroy() {
