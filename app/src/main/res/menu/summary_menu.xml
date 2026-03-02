@@ -5,10 +5,10 @@
 
     <item
         android:id="@+id/menu_summary_type"
-        android:title="@string/menu_summary_type"
-        app:showAsAction="never"
-        >
-        <menu>
+        android:title="    Summary Types ↓">
+
+    </item>
+
             <item
                 android:id="@+id/menu_short_summary"
                 android:title="@string/menu_short_summary" />
@@ -18,7 +18,5 @@
             <item
                 android:id="@+id/menu_very_detailed_summary"
                 android:title="@string/menu_very_detailed_summary" />
-        </menu>
-    </item>
 
 </menu>

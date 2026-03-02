@@ -185,7 +185,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applySystemThemeOverride() {
-        AppCompatDelegate.setDefaultNightMode(
+        delegate.setLocalNightMode(                   // ✅ only affects MainActivity
             if (isDarkMode) AppCompatDelegate.MODE_NIGHT_YES
             else AppCompatDelegate.MODE_NIGHT_NO
         )

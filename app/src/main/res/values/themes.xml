@@ -25,7 +25,7 @@
 
     <!-- Dark glass popup menu -->
     <style name="PopupMenu.Glass" parent="Widget.MaterialComponents.PopupMenu">
-        <item name="android:popupBackground">#E0111128</item>
-        <item name="android:textColorPrimary">#FFFFFFFF</item>
+        <item name="android:popupBackground">#B2FBFBFB</item>
+        <item name="android:textColorPrimary">#B3FCFEFF</item>
     </style>
 </resources>

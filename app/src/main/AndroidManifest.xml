@@ -20,11 +20,12 @@
         android:usesCleartextTraffic="true">
         <activity
             android:name=".ui.SettingsActivity"
+            android:configChanges="orientation|screenSize|screenLayout"
             android:exported="false" />
         <!-- Summary Activity (preserves TTS state & summary content) -->
         <activity
             android:name=".ui.ActivitySummary"
-            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize"
+            android:configChanges="orientation|screenSize|screenLayout"
             android:exported="false" /> <!-- Library hierarchy activities -->
         <activity
             android:name=".ui.Activity_Library"

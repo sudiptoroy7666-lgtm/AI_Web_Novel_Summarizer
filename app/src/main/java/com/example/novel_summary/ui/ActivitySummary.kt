@@ -27,8 +27,9 @@ import kotlinx.coroutines.launch
 import java.util.*
 import android.content.res.Configuration          // Required for Configuration parameter
 import android.view.WindowManager                  // Required for window.setSoftInputMode (MainActivity only)
+import androidx.appcompat.app.AppCompatDelegate
 import com.example.novel_summary.utils.SyncManager
-
+import androidx.appcompat.widget.Toolbar  // ✅ Correct
 class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var binding: ActivitySummaryBinding
@@ -53,9 +54,11 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var lastRangeStart = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        delegate.setLocalNightMode(AppCompatDelegate.MODE_NIGHT_NO) // ✅ always light
         super.onCreate(savedInstanceState)
         binding = ActivitySummaryBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
 
         setupToolbar()
         setupTextToSpeech()
