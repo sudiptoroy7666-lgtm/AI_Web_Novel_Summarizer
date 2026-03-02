@@ -58,6 +58,7 @@
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    popUpMenu="@style/PopupMenu.Glass"
                     android:layout_weight="3"
                     android:text="Choose AI"
                     android:textColor="@color/white"

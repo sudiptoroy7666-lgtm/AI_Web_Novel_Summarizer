@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import java.util.*
 import android.content.res.Configuration          // Required for Configuration parameter
 import android.view.WindowManager                  // Required for window.setSoftInputMode (MainActivity only)
+import com.example.novel_summary.utils.SyncManager
 
 class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
 
@@ -420,6 +421,19 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
                             timestamp = System.currentTimeMillis()
                         )
                     )
+                    // After saving chapter successfully
+                    if (volume != null && novel != null) {
+                        val savedChapter = Chapter(
+                            volumeId = volume.id,
+                            chapterName = chapterName,
+                            summaryText = currentSummaryText,
+                            summaryType = currentSummaryType,
+                            timestamp = System.currentTimeMillis()
+                        )
+
+                        // Enqueue for sync
+                        SyncManager.enqueueChapterSync(this@ActivitySummary, savedChapter, novel.id, volume.id)
+                    }
                     runOnUiThread {
                         ToastUtils.showSuccess(this@ActivitySummary, "Summary updated successfully")
                         finish()

@@ -89,6 +89,8 @@ class MainActivity : AppCompatActivity() {
 
         updateDarkModeToggleIcon()
 
+        setupSettingsButton()
+
         if (savedInstanceState != null) {
             // Restore WebView state if the Activity was recreated (e.g. theme toggle)
             val wasHomePageVisible = savedInstanceState.getBoolean("is_homepage_visible", true)
@@ -109,6 +111,30 @@ class MainActivity : AppCompatActivity() {
                 loadUrl(url)
             } ?: loadHomePage()
         }
+    }
+
+
+    // ✅ NEW METHOD: Settings Button Handler
+    private fun setupSettingsButton() {
+        try {
+            // Find the settings button from home page layout
+            val settingsButton = findViewById<android.widget.ImageButton>(R.id.settings_button)
+            settingsButton?.setOnClickListener {
+                navigateToSettings()
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("SettingsButton", "Settings button not found in current layout")
+        }
+    }
+
+    // ✅ NAVIGATION METHOD
+    private fun navigateToSettings() {
+        val intent = Intent(this, SettingsActivity::class.java)
+        startActivity(intent)
+        overridePendingTransition(
+            android.R.anim.slide_in_left,
+            android.R.anim.slide_out_right
+        )
     }
 
     override fun onNewIntent(intent: Intent) {
