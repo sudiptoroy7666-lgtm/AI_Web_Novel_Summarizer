@@ -5,7 +5,10 @@
 
     <item
         android:id="@+id/menu_summary_type"
-        android:title="    Summary Types ↓">
+        android:title="@string/summary_types"
+
+
+        >
 
     </item>
 

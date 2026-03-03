@@ -84,5 +84,10 @@
     <string name="toggle_dark_mode">Toggle Dark Mode</string>
     <string name="choose_ai">Choose AI</string>
 
+    <string name="summary_types">Summary Types ↓
+
+
+    </string>
+
 
 </resources>

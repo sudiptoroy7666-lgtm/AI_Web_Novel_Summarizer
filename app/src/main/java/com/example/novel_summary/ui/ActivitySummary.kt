@@ -54,7 +54,7 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var lastRangeStart = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        delegate.setLocalNightMode(AppCompatDelegate.MODE_NIGHT_NO) // ✅ always light
+
         super.onCreate(savedInstanceState)
         binding = ActivitySummaryBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -78,6 +78,7 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.summary_menu, menu)
+
         return true
     }
 
