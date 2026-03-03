@@ -118,7 +118,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupSettingsButton() {
         try {
             // Find the settings button from home page layout
-            val settingsButton = findViewById<android.widget.ImageButton>(R.id.settings_button)
+            val settingsButton = findViewById<android.widget.TextView>(R.id.settings_button)
             settingsButton?.setOnClickListener {
                 navigateToSettings()
             }

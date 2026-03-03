@@ -56,6 +56,7 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         binding = ActivitySummaryBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
