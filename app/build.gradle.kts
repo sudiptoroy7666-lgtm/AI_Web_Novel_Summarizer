@@ -2,6 +2,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
+    alias(libs.plugins.google.gms.google.services)
+
 }
 
 
@@ -46,7 +48,6 @@ android {
 
 
                 // Cerebras Configuration (ultra-fast inference
-
         val cerebrasApiKey = project.findProperty("CEREBRAS_API_KEY") as? String ?: ""
 
         buildConfigField("String", "CEREBRAS_API_KEY", "\"$cerebrasApiKey\"")
@@ -55,9 +56,18 @@ android {
         buildConfigField("String", "CEREBRAS_MODEL", "\"gpt-oss-120b\"")
 
 
-        
+        // Gemini API Configuration (2026 Updated)
+        val geminiApiKey = project.findProperty("GEMINI_API_KEY") as? String ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
 
+// Base URL for OpenAI Compatibility (Remains consistent in 2026)
+        buildConfigField("String", "GEMINI_BASE_URL", "\"https://generativelanguage.googleapis.com/v1beta/openai/\"")
 
+// Updated to the stable 2.5 Flash model (Standard for large-scale summarization)
+        buildConfigField("String", "GEMINI_MODEL", "\"gemini-2.5-flash\"")
+
+// Updated Context: 2.5 Flash and 3.1 Pro now support 1M tokens by default
+        buildConfigField("int", "MAX_CONTENT_GEMINI", "1000000")
     }
 
     buildTypes {
@@ -94,6 +104,11 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.12.3")
     implementation("androidx.fragment:fragment-ktx:1.8.5")
     implementation(libs.androidx.activity)
+    implementation(libs.firebase.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+    implementation(libs.firebase.firestore)
 
     // Room Database (2026 latest version compatible with AGP 8.9.1)
     val roomVersion = "2.7.1"
@@ -131,6 +146,10 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
+    implementation("com.google.firebase:firebase-analytics")
 
 
     // Gson for JSON parsing

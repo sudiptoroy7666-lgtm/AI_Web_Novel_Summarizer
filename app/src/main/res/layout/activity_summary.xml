@@ -22,42 +22,64 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent"
-            android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar">
+            android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+
+            app:popupTheme="@style/PopupMenu.Glass">  <!-- ✅ Add this -->
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="end"
+                android:weightSum="10"
                 android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnTextToSpeech"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
                     android:text="@string/menu_text_to_speech"
                     android:textColor="@color/white"
-                    android:textSize="12sp"
+                    android:textSize="10sp"
                     app:cornerRadius="0dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveSummary"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
                     android:text="@string/menu_save_summary"
                     android:textColor="@color/white"
-                    android:textSize="12sp"
+                    android:textSize="10sp"
+                    app:cornerRadius="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChooseAi"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    popUpMenu="@style/PopupMenu.Glass"
+                    android:layout_weight="3"
+                    android:text="@string/choose_ai"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
                     app:cornerRadius="0dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSummaryMenu"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
+                    android:layout_width="1dp"
+                    popUpMenu="@style/PopupMenu.Glass"
+                    android:background="@color/black"
+                    app:backgroundTint="@color/black"
+                    android:backgroundTint="@color/black"
                     android:layout_height="match_parent"
+                    android:layout_weight="1"
                     android:text="@string/menu_summary_type"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"
+                    android:textColor="@color/black"
+                    android:textSize="1sp"
                     app:cornerRadius="0dp" />
             </LinearLayout>
         </androidx.appcompat.widget.Toolbar>

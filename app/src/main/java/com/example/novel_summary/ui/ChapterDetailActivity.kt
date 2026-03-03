@@ -27,6 +27,15 @@ class ChapterDetailActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var currentChunkIndex = 0
     private val MAX_CHUNK_SIZE = 4000 // Safe limit for most TTS engines
 
+    private var chunkOffsets = listOf<Int>()
+    private var resumeOffsetInChunk = 0
+
+
+    private var isPaused = false
+    private var pausedChunkIndex = 0
+    private var pausedCharOffset = 0
+    private var lastRangeStart = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySummaryBinding.inflate(layoutInflater)
@@ -44,6 +53,7 @@ class ChapterDetailActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         binding.btnTextToSpeech.isVisible = true
         binding.btnSaveSummary.isVisible = false
         binding.btnSummaryMenu.isVisible = false
+        binding.btnChooseAi.isVisible = false
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -123,21 +133,42 @@ class ChapterDetailActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun toggleSpeech() {
         if (isSpeaking) {
-            stopSpeaking()
+            pauseSpeaking()
         } else {
-            startSpeaking()
+            if (isPaused) resumeSpeaking() else startSpeaking()
         }
+    }
+
+    private fun resumeSpeaking() {
+        val freshChunks = splitTextIntoChunks(summaryText, MAX_CHUNK_SIZE)
+        chunkOffsets = computeChunkOffsets(summaryText, freshChunks)  // ← add
+        textChunks = freshChunks.toMutableList()
+        currentChunkIndex = pausedChunkIndex
+        resumeOffsetInChunk = pausedCharOffset                        // ← add
+        if (pausedCharOffset > 0 && pausedChunkIndex < textChunks.size) {
+            (textChunks as MutableList)[pausedChunkIndex] = textChunks[pausedChunkIndex].drop(pausedCharOffset).trimStart()
+        }
+        isPaused = false
+        speakNextChunk()
     }
 
     // ✅ METHOD 1: CHUNKING WITH SEQUENTIAL PLAYBACK
     private fun startSpeaking() {
+
+
         if (summaryText.length < 10) {
             ToastUtils.showError(this, "Text too short to speak")
             return
         }
 
+
+
         // Split text into chunks
         textChunks = splitTextIntoChunks(summaryText, MAX_CHUNK_SIZE)
+        currentChunkIndex = 0
+        textChunks = splitTextIntoChunks(summaryText, MAX_CHUNK_SIZE)
+        chunkOffsets = computeChunkOffsets(summaryText, textChunks)  // ← add this
+        resumeOffsetInChunk = 0                                       // ← add this
         currentChunkIndex = 0
 
         // Set up progress listener
@@ -148,8 +179,30 @@ class ChapterDetailActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     binding.btnTextToSpeech.text = "❚❚ Stop (${currentChunkIndex + 1}/${textChunks.size})"
                 }
             }
+            override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
+                lastRangeStart = start
+                super.onRangeStart(utteranceId, start, end, frame)
+                runOnUiThread {
+                    if (isSpeaking) {
+                        try {
+                            val baseOffset = (chunkOffsets.getOrElse(currentChunkIndex) { 0 }) + resumeOffsetInChunk
+                            val actualStart = baseOffset + start
+                            val actualEnd = (baseOffset + end).coerceAtMost(summaryText.length)
+                            val spannable = android.text.SpannableString(summaryText)
+                            spannable.setSpan(
+                                android.text.style.BackgroundColorSpan(android.graphics.Color.parseColor("#4022D3EE")),
+                                actualStart,
+                                actualEnd,
+                                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                            )
+                            binding.tvSummaryContent.text = spannable
+                        } catch (e: Exception) { }
+                    }
+                }
+            }
 
             override fun onDone(utteranceId: String?) {
+                isPaused = false
                 runOnUiThread {
                     currentChunkIndex++
                     if (currentChunkIndex < textChunks.size) {
@@ -204,11 +257,24 @@ class ChapterDetailActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         }
     }
-
-    private fun stopSpeaking() {
+    private fun pauseSpeaking() {
+        pausedChunkIndex = currentChunkIndex
+        pausedCharOffset = lastRangeStart
+        isPaused = true
         textToSpeech?.stop()
         isSpeaking = false
-        binding.btnTextToSpeech.text = "Text to Speech"
+        binding.btnTextToSpeech.text = "▶ Resume"
+    }
+
+    private fun computeChunkOffsets(text: String, chunks: List<String>): List<Int> {
+        val offsets = mutableListOf<Int>()
+        var searchFrom = 0
+        for (chunk in chunks) {
+            val idx = text.indexOf(chunk, searchFrom)
+            offsets.add(if (idx >= 0) idx else searchFrom)
+            searchFrom = if (idx >= 0) idx + chunk.length else searchFrom + chunk.length
+        }
+        return offsets
     }
 
     private fun splitTextIntoChunks(text: String, maxSize: Int): List<String> {

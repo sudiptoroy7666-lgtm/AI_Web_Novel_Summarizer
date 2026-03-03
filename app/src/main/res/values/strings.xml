@@ -65,23 +65,29 @@
     <string name="btn_add_volume">Add Volume</string>
     <string name="btn_add_chapter">Add Chapter</string>
 
-        <!-- New Home Page Strings -->
-        <string name="home_title">WebNovel Summarizer</string>
-        <string name="home_subtitle">Your AI-powered companion for reading and summarizing web novels</string>
-        <string name="home_search_hint">Search Google or enter a URL...</string>
-        <string name="home_novel_sites">Popular Novel Sites</string>
-        <string name="home_features">Features</string>
-        <string name="feature_summarization">AI Summarization</string>
-        <string name="feature_library">Organized Library</string>
-        <string name="feature_tts">Text to Speech</string>
-        <string name="feature_bookmarks">Bookmark and History</string>
-        <string name="cannot_bookmark_home">Cannot bookmark home page</string>
-        <string name="cannot_summarize_home">Cannot summarize home page</string>
-        <string name="exit_app_title">Exit Application</string>
-        <string name="exit_app_message">Are you sure you want to exit the app?</string>
-        <string name="btn_exit">Exit</string>
+    <!-- New Home Page Strings -->
+    <string name="home_title">WebNovel Summarizer</string>
+    <string name="home_subtitle">Your AI-powered companion for reading and summarizing web novels</string>
+    <string name="home_search_hint">Search Google or enter a URL...</string>
+    <string name="home_novel_sites">Popular Novel Sites</string>
+    <string name="home_features">Features</string>
+    <string name="feature_summarization">AI Summarization</string>
+    <string name="feature_library">Organized Library</string>
+    <string name="feature_tts">Text to Speech</string>
+    <string name="feature_bookmarks">Bookmark and History</string>
+    <string name="cannot_bookmark_home">Cannot bookmark home page</string>
+    <string name="cannot_summarize_home">Cannot summarize home page</string>
+    <string name="exit_app_title">Exit Application</string>
+    <string name="exit_app_message">Are you sure you want to exit the app?</string>
+    <string name="btn_exit">Exit</string>
     <string name="home">Home</string>
     <string name="toggle_dark_mode">Toggle Dark Mode</string>
+    <string name="choose_ai">Choose AI</string>
+
+    <string name="summary_types">Summary Types ↓
+
+
+    </string>
 
 
 </resources>

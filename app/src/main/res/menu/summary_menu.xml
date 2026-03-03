@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
 
     <item
         android:id="@+id/menu_summary_type"
-        android:title="@string/menu_summary_type"
-        app:showAsAction="never">
-        <menu>
+        android:title="@string/summary_types"
+
+
+        >
+
+    </item>
+
             <item
                 android:id="@+id/menu_short_summary"
                 android:title="@string/menu_short_summary" />
@@ -16,7 +21,5 @@
             <item
                 android:id="@+id/menu_very_detailed_summary"
                 android:title="@string/menu_very_detailed_summary" />
-        </menu>
-    </item>
 
 </menu>
