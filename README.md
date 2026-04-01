@@ -9,6 +9,7 @@
 ![Min SDK](https://img.shields.io/badge/Min%20SDK-API%2028-blue?style=flat-square)
 
 ---
+Download from : https://apkpure.com/p/com.example.novel_summary
 
 ## Overview
 
