@@ -7,6 +7,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -129,7 +130,7 @@ class Activity_History : AppCompatActivity() {
     }
 
     private fun observeHistory() {
-        historyJob = CoroutineScope(Dispatchers.Main).launch {
+        historyJob = lifecycleScope.launch {
             viewModel.getAllHistory().collect { historyList ->
                 updateUI(historyList)
             }

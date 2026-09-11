@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+
+    >
+    <item android:id="@+id/menu_ai_auto"
+        android:title="Auto"
+
+        />
+    <item android:id="@+id/menu_ai_cerebras"
+        android:title="Cerebras" />
+    <item android:id="@+id/menu_ai_groq_primary"
+        android:title="Groq Primary" />
+    <item android:id="@+id/menu_ai_groq_fallback"
+        android:title="Groq Fallback" />
+    <item android:id="@+id/menu_ai_gemini"
+        android:title="Google AI (Gemini)" />
+</menu>

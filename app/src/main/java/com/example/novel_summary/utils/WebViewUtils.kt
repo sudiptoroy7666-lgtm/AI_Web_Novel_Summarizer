@@ -61,13 +61,17 @@ object WebViewUtils {
         settings.setAllowFileAccess(false)
         @Suppress("DEPRECATION")
         settings.setAllowContentAccess(false)
+        @Suppress("DEPRECATION")
+        settings.allowFileAccessFromFileURLs = false
+        @Suppress("DEPRECATION")
+        settings.allowUniversalAccessFromFileURLs = false
 
         settings.useWideViewPort = true
         settings.loadWithOverviewMode = true
         settings.builtInZoomControls = true
         settings.displayZoomControls = false
         settings.mediaPlaybackRequiresUserGesture = false
-        settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
 
         webView.setLayerType(WebView.LAYER_TYPE_HARDWARE, null)
     }
@@ -126,24 +130,24 @@ object WebViewUtils {
                 s.innerHTML = `
                     html, body, div, section, article, main, header,
                     footer, p, span, li, ul, ol, blockquote, pre, code {
-                        background-color: #121212 !important;
-                        color: #e0e0e0 !important;
+                        background-color: #121212;
+                        color: #e0e0e0;
                     }
                     input, textarea, select {
-                        background-color: #1e1e1e !important;
-                        color: #ffffff !important;
-                        border-color: #444 !important;
+                        background-color: #1e1e1e;
+                        color: #ffffff;
+                        border-color: #444;
                     }
                     button {
-                        background-color: #2a2a3a !important;
-                        color: #ffffff !important;
-                        border-color: #444 !important;
+                        background-color: #2a2a3a;
+                        color: #ffffff;
+                        border-color: #444;
                     }
-                    a { color: #9d8cff !important; }
-                    a:visited { color: #c5b8ff !important; }
+                    a { color: #9d8cff; }
+                    a:visited { color: #c5b8ff; }
                     table, th, td {
-                        background-color: #1a1a2a !important;
-                        border-color: #333 !important;
+                        background-color: #1a1a2a;
+                        border-color: #333;
                     }
                     img { filter: brightness(0.88) contrast(1.05); }
                     ::-webkit-scrollbar { background: #1a1a1a; }

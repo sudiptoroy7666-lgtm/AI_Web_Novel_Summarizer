@@ -7,6 +7,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.novel_summary.R
 import com.example.novel_summary.data.model.Novel
@@ -19,7 +20,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-
+import android.view.Menu
+import com.example.novel_summary.ui.audiobook.AudiobookManagerActivity
 class Activity_Library : AppCompatActivity() {
 
     private lateinit var binding: ActivityLibraryBinding
@@ -53,10 +55,19 @@ class Activity_Library : AppCompatActivity() {
                 finish()
                 true
             }
+
+            R.id.menu_audiobooks -> {
+                startActivity(Intent(this, AudiobookManagerActivity::class.java))
+                true
+            }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
-
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_library, menu)
+        return true
+    }
     // ui/Activity_Library.kt - UPDATE setupRecyclerView()
     private fun setupRecyclerView() {
         adapter = LibraryAdapter(
@@ -99,8 +110,8 @@ class Activity_Library : AppCompatActivity() {
     }
 
     private fun observeLibrary() {
-        libraryJob = CoroutineScope(Dispatchers.Main).launch {
-            viewModel.allNovels.collect { novelList ->  // Now receives NovelWithStats
+        libraryJob = lifecycleScope.launch {
+            viewModel.allNovels.collect { novelList ->
                 updateUI(novelList)
             }
         }
@@ -129,7 +140,7 @@ class Activity_Library : AppCompatActivity() {
             .setPositiveButton("Add") { _, _ ->
                 val novelName = editText.text.toString().trim()
                 if (novelName.isNotEmpty()) {
-                    CoroutineScope(Dispatchers.IO).launch {
+                    lifecycleScope.launch(Dispatchers.IO) {
                         val existingNovel = viewModel.getNovelByName(novelName)
                         if (existingNovel == null) {
                             viewModel.insertNovel(com.example.novel_summary.data.model.Novel(name = novelName))
@@ -176,7 +187,7 @@ class Activity_Library : AppCompatActivity() {
             .setPositiveButton("Save") { _, _ ->
                 val newName = editText.text.toString().trim()
                 if (newName.isNotEmpty()) {
-                    CoroutineScope(Dispatchers.IO).launch {
+                    lifecycleScope.launch(Dispatchers.IO) {
                         val existingNovel = viewModel.getNovelByName(newName)
                         if (existingNovel == null) {
                             viewModel.updateNovel(novel.copy(name = newName))

@@ -10,6 +10,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.example.novel_summary.R
 import com.example.novel_summary.data.model.Chapter
 import com.example.novel_summary.data.model.Novel
@@ -18,6 +19,7 @@ import com.example.novel_summary.databinding.ActivitySummaryBinding
 import com.example.novel_summary.ui.viewmodel.SummaryViewModel
 import com.example.novel_summary.utils.ContentHolder
 import com.example.novel_summary.utils.NetworkUtils
+import com.example.novel_summary.utils.SummaryContentStore
 import com.example.novel_summary.utils.SummaryPrompts
 import com.example.novel_summary.utils.ToastUtils
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +32,7 @@ import android.view.WindowManager                  // Required for window.setSof
 import androidx.appcompat.app.AppCompatDelegate
 import com.example.novel_summary.utils.SyncManager
 import androidx.appcompat.widget.Toolbar  // ✅ Correct
+import com.example.novel_summary.utils.customai.CustomAiStore
 class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var binding: ActivitySummaryBinding
@@ -135,34 +138,70 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
         binding.btnChooseAi.setOnClickListener { view ->
             val popup = android.widget.PopupMenu(this, view)
             popup.menuInflater.inflate(R.menu.ai_selection_menu, popup.menu)
+
+            val customApis = CustomAiStore.getApis(this)
+            val customBaseId = 10000
+
+            customApis.forEachIndexed { index, api ->
+                popup.menu.add(
+                    Menu.NONE,
+                    customBaseId + index,
+                    Menu.NONE,
+                    api.name
+                )
+            }
+
             popup.setOnMenuItemClickListener { menuItem ->
-                val chosen = when (menuItem.itemId) {
-                    R.id.menu_ai_auto -> "Auto"
-                    R.id.menu_ai_cerebras -> "Cerebras"
-                    R.id.menu_ai_groq_primary -> "Groq Primary"
-                    R.id.menu_ai_groq_fallback -> "Groq Fallback"
-                    R.id.menu_ai_gemini -> "Google AI (Gemini)"
+                val chosen = when {
+                    menuItem.itemId == R.id.menu_ai_auto -> "Auto"
+                    menuItem.itemId == R.id.menu_ai_cerebras -> "Cerebras"
+                    menuItem.itemId == R.id.menu_ai_groq_primary -> "Groq Primary"
+                    menuItem.itemId == R.id.menu_ai_groq_fallback -> "Groq Fallback"
+                    menuItem.itemId == R.id.menu_ai_gemini -> "Google AI (Gemini)"
+                    menuItem.itemId >= customBaseId && menuItem.itemId < customBaseId + customApis.size -> {
+                        customApis[menuItem.itemId - customBaseId].name
+                    }
                     else -> "Auto"
                 }
+
                 saveAiSelection(chosen)
-                binding.btnChooseAi.text = chosen // Optional visual feedback
+                binding.btnChooseAi.text = chosen
+
                 ToastUtils.showSuccess(this, "Selected: $chosen")
+
                 true
             }
+
             popup.show()
         }
     }
 
     private fun extractIntentData() {
-        // ✅ FIXED: Get content from ContentHolder instead of Intent extras
-        val contentData = ContentHolder.getContent()
+        val contentId = intent.getStringExtra("summary_content_id")
+        val payload = if (!contentId.isNullOrBlank()) {
+            SummaryContentStore.readContent(this, contentId)
+        } else {
+            val legacy = ContentHolder.getContent()
+            if (legacy.isValid) {
+                SummaryContentStore.SummaryPayload(
+                    id = "legacy",
+                    url = legacy.url,
+                    title = legacy.title,
+                    content = legacy.content,
+                    createdAt = legacy.timestamp
+                )
+            } else null
+        }
 
-        extractedContent = contentData.content
-        pageUrl = contentData.url
-        pageTitle = contentData.title
+        extractedContent = payload?.content ?: ""
+        pageUrl = payload?.url ?: intent.getStringExtra("summary_url") ?: ""
+        pageTitle = payload?.title ?: intent.getStringExtra("summary_title") ?: "Untitled"
 
-        // Clear ContentHolder after reading to free memory
-        ContentHolder.clear()
+        if (!contentId.isNullOrBlank()) {
+            SummaryContentStore.cleanupOldFiles(this)
+        } else {
+            ContentHolder.clear()
+        }
 
         binding.tvSummaryTitle.text = pageTitle
     }
@@ -185,7 +224,7 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         showLoading(true)
 
-        currentSummaryJob = CoroutineScope(Dispatchers.IO).launch {
+        currentSummaryJob = lifecycleScope.launch(Dispatchers.IO) {
             val chosenAi = loadAiSelection()
             val result = viewModel.generateSummary(extractedContent, currentSummaryType, chosenAi)
 
@@ -392,7 +431,7 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun saveSummary(novelName: String, volumeName: String, chapterName: String) {
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 // Get or create novel
                 var novel = viewModel.getNovelByName(novelName)
@@ -513,10 +552,32 @@ class ActivitySummary : AppCompatActivity(), TextToSpeech.OnInitListener {
         val prefs = getSharedPreferences("SummaryPrefs", Context.MODE_PRIVATE)
         prefs.edit().putString("last_ai_selection", aiName).apply()
     }
-    
+
     private fun loadAiSelection(): String {
         val prefs = getSharedPreferences("SummaryPrefs", Context.MODE_PRIVATE)
-        return prefs.getString("last_ai_selection", "Auto") ?: "Auto"
+        val saved = prefs.getString("last_ai_selection", "Auto") ?: "Auto"
+
+        if (saved.equals("Auto", true) || saved.equals("Auto (Smart Routing)", true)) {
+            return "Auto"
+        }
+
+        val builtIn = listOf(
+            "Auto",
+            "Cerebras",
+            "Groq Primary",
+            "Groq Fallback",
+            "Google AI (Gemini)"
+        )
+
+        if (builtIn.contains(saved)) {
+            return saved
+        }
+
+        val customExists = CustomAiStore.getApis(this).any { api ->
+            api.name == saved
+        }
+
+        return if (customExists) saved else "Auto"
     }
 
     override fun onDestroy() {

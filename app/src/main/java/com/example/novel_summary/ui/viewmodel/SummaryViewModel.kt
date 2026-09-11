@@ -9,14 +9,22 @@ import com.example.novel_summary.data.model.Chapter
 import com.example.novel_summary.data.model.Novel
 import com.example.novel_summary.data.model.Volume
 import com.example.novel_summary.data.network.ChatCompletionRequest
+import com.example.novel_summary.data.network.GroqApiService
 import com.example.novel_summary.data.network.Message
 import com.example.novel_summary.data.repository.SummaryRepository
 import com.example.novel_summary.utils.SummaryPrompts
+import com.example.novel_summary.utils.customai.CustomAiStore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.HttpException
-
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.security.MessageDigest
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 class RateLimitException(message: String) : Exception(message)
 
 data class ApiProvider(
@@ -33,6 +41,7 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
 
     private val summaryRepository: SummaryRepository
     private val TAG = "SummaryViewModel"
+    private val serviceCache = ConcurrentHashMap<String, GroqApiService>()
 
     init {
         val database = com.example.novel_summary.App.database
@@ -64,7 +73,20 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
     private fun getAvailableProviders(chosenProvider: String = "auto"): List<ApiProvider> {
         val providers = mutableListOf<ApiProvider>()
 
-        // Helper to add providers
+        val context = getApplication<Application>().applicationContext
+
+        val customProviders = CustomAiStore.getApis(context).map { api ->
+            ApiProvider(
+                name = api.name,
+                apiKey = api.apiKey,
+                model = api.model,
+                baseUrl = api.baseUrl,
+                maxChars = api.maxChars,
+                maxChunks = 5,
+                chunkDelayMs = 1000
+            )
+        }
+
         fun addCerebras() {
             if (BuildConfig.CEREBRAS_API_KEY.isNotBlank()) {
                 providers.add(
@@ -75,7 +97,7 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
                         baseUrl = BuildConfig.CEREBRAS_BASE_URL,
                         maxChars = BuildConfig.MAX_CONTENT_CEREBRAS,
                         maxChunks = 6,
-                        chunkDelayMs = 500  // Cerebras is VERY fast
+                        chunkDelayMs = 500
                     )
                 )
             }
@@ -129,18 +151,49 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
             }
         }
 
-        when (chosenProvider.lowercase()) {
+        fun addAllBuiltInProviders() {
+            addCerebras()
+            addGroqPrimary()
+            addGroqFallback()
+            addGemini()
+        }
+
+        val choice = chosenProvider.trim()
+
+        // AUTO mode: built-in providers first, then custom APIs.
+        if (
+            choice.isEmpty() ||
+            choice.equals("auto", true) ||
+            choice.equals("auto (smart routing)", true)
+        ) {
+            addAllBuiltInProviders()
+            providers.addAll(customProviders)
+            return providers
+        }
+
+        // Specific provider selected.
+        when (choice.lowercase()) {
             "cerebras" -> addCerebras()
             "groq primary" -> addGroqPrimary()
             "groq fallback" -> addGroqFallback()
             "google ai (gemini)" -> addGemini()
             else -> {
-                // Auto fallback tier
-                addCerebras()
-                addGroqPrimary()
-                addGroqFallback()
-                addGemini()
+                val customProvider = customProviders.firstOrNull { provider ->
+                    provider.name.equals(choice, ignoreCase = true)
+                }
+
+                if (customProvider != null) {
+                    providers.add(customProvider)
+                }
             }
+        }
+
+        // Safety fallback:
+        // If selected provider no longer exists or has blank key,
+        // return all providers instead of crashing or returning empty.
+        if (providers.isEmpty()) {
+            addAllBuiltInProviders()
+            providers.addAll(customProviders)
         }
 
         return providers
@@ -509,40 +562,50 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
                 msg.contains("rate limit")
     }
 
+    private fun stableServiceKey(apiKey: String, baseUrl: String, providerName: String): String {
+        val hashInput = "$providerName|${baseUrl.trim().trimEnd('/')}|${apiKey.take(12)}"
+        val digest = MessageDigest.getInstance("SHA-256").digest(hashInput.toByteArray(Charsets.UTF_8))
+        return digest.joinToString("") { "%02x".format(it) }
+    }
+
     private fun createService(
         apiKey: String,
         baseUrl: String,
         providerName: String
-    ): com.example.novel_summary.data.network.GroqApiService {
-        val loggingInterceptor = okhttp3.logging.HttpLoggingInterceptor().apply {
-            level = okhttp3.logging.HttpLoggingInterceptor.Level.BASIC  // Reduced logging
-        }
+    ): GroqApiService {
+        val normalizedBaseUrl = if (baseUrl.trim().endsWith("/")) baseUrl.trim() else "${baseUrl.trim()}/"
+        val cacheKey = stableServiceKey(apiKey, normalizedBaseUrl, providerName)
 
-        val okHttpClient = okhttp3.OkHttpClient.Builder()
-            .addInterceptor { chain ->
-                val original = chain.request()
-                val requestBuilder = original.newBuilder()
-                    .header("Authorization", "Bearer $apiKey")
-                    .header("Content-Type", "application/json")
-
-                // GLM/Z.AI specific headers
-                if (providerName.contains("GLM", ignoreCase = true)) {
-                    requestBuilder.header("User-Agent", "Novel-Summary-App/1.0")
-                }
-
-                chain.proceed(requestBuilder.build())
+        return serviceCache.getOrPut(cacheKey) {
+            val loggingInterceptor = HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BASIC
             }
-            .addInterceptor(loggingInterceptor)
-            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(90, java.util.concurrent.TimeUnit.SECONDS)  // Increased for chunking
-            .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-            .build()
 
-        return retrofit2.Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .client(okHttpClient)
-            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
-            .build()
-            .create(com.example.novel_summary.data.network.GroqApiService::class.java)
+            val okHttpClient = OkHttpClient.Builder()
+                .addInterceptor { chain ->
+                    val original = chain.request()
+                    val requestBuilder = original.newBuilder()
+                        .header("Authorization", "Bearer $apiKey")
+                        .header("Content-Type", "application/json")
+
+                    if (providerName.contains("GLM", ignoreCase = true)) {
+                        requestBuilder.header("User-Agent", "Novel-Summary-App/1.0")
+                    }
+
+                    chain.proceed(requestBuilder.build())
+                }
+                .addInterceptor(loggingInterceptor)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(90, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .build()
+
+            Retrofit.Builder()
+                .baseUrl(normalizedBaseUrl)
+                .client(okHttpClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+                .create(GroqApiService::class.java)
+        }
     }
 }
