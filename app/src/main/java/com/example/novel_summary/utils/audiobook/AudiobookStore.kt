@@ -17,7 +17,6 @@ object AudiobookStore {
     private const val DIRECTORY_NAME = "audiobooks"
     private const val INDEX_FILE_NAME = "index.json"
 
-    // Safe limits for your expected 200k - 300k character books
     private const val MAX_IMPORT_CHARS = 1_000_000
     private const val MAX_IMPORT_BYTES = 4_000_000
 
@@ -32,12 +31,14 @@ object AudiobookStore {
             val type = object : TypeToken<List<AudiobookMeta>>() {}.type
             val books: List<AudiobookMeta>? = Gson().fromJson(json, type)
 
-            books
-                ?.sortedByDescending { it.updatedAt }
-                ?: emptyList()
+            books?.sortedByDescending { it.updatedAt } ?: emptyList()
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    fun getBookById(context: Context, id: String): AudiobookMeta? {
+        return getBooks(context).firstOrNull { it.id == id }
     }
 
     private fun saveBooks(context: Context, books: List<AudiobookMeta>) {
@@ -46,7 +47,7 @@ object AudiobookStore {
             val json = Gson().toJson(books)
             file.writeText(json, Charsets.UTF_8)
         } catch (e: Exception) {
-            // Silent fail for minimal Phase 2.
+            // Silent fail
         }
     }
 
@@ -60,24 +61,15 @@ object AudiobookStore {
             val normalizedText = text.trim()
 
             if (normalizedText.length < 100) {
-                return Result.failure(
-                    Exception("Text is too short. Please paste at least 100 characters.")
-                )
+                return Result.failure(Exception("Text is too short. Please paste at least 100 characters."))
             }
 
             if (normalizedText.length > MAX_IMPORT_CHARS) {
-                return Result.failure(
-                    Exception("Text is too large. Maximum allowed is 1,000,000 characters.")
-                )
+                return Result.failure(Exception("Text is too large. Maximum allowed is 1,000,000 characters."))
             }
 
             val directory = getDirectory(context)
-
-            val id = "book_" + UUID.randomUUID()
-                .toString()
-                .replace("-", "")
-                .take(12)
-
+            val id = "book_" + UUID.randomUUID().toString().replace("-", "").take(12)
             val fileName = "$id.txt"
             val file = File(directory, fileName)
 
@@ -102,6 +94,54 @@ object AudiobookStore {
         }
     }
 
+    fun importFromCloud(
+        context: Context,
+        id: String,
+        title: String,
+        text: String,
+        createdAt: Long,
+        updatedAt: Long,
+        lastUnitIndex: Int,
+        lastCharOffset: Int
+    ): Result<AudiobookMeta> {
+        return try {
+            val directory = getDirectory(context)
+            val fileName = "$id.txt"
+            val file = File(directory, fileName)
+
+            val tempFile = File(directory, "$fileName.tmp")
+            tempFile.writeText(text, Charsets.UTF_8)
+            if (file.exists()) file.delete()
+            tempFile.renameTo(file)
+
+            val meta = AudiobookMeta(
+                id = id,
+                title = title,
+                fileName = fileName,
+                charCount = text.length,
+                createdAt = createdAt,
+                updatedAt = updatedAt
+            )
+
+            val books = getBooks(context).toMutableList()
+            val existingIndex = books.indexOfFirst { it.id == id }
+            if (existingIndex >= 0) {
+                books[existingIndex] = meta
+            } else {
+                books.add(meta)
+            }
+            saveBooks(context, books)
+
+            if (lastUnitIndex > 0 || lastCharOffset > 0) {
+                AudiobookPositionStore.savePosition(context, id, lastUnitIndex, lastCharOffset, true)
+            }
+
+            Result.success(meta)
+        } catch (e: Exception) {
+            Result.failure(Exception("Cloud import failed: ${e.message}"))
+        }
+    }
+
     fun importFromUri(
         context: Context,
         uri: Uri,
@@ -109,18 +149,12 @@ object AudiobookStore {
     ): Result<AudiobookMeta> {
         return try {
             val textResult = readTextFromUri(context, uri)
-
             if (textResult.isFailure) {
-                return Result.failure(
-                    textResult.exceptionOrNull() ?: Exception("Failed to read file")
-                )
+                return Result.failure(textResult.exceptionOrNull() ?: Exception("Failed to read file"))
             }
 
             val text = textResult.getOrNull() ?: ""
-
-            val displayName = titleOverride?.takeIf { it.isNotBlank() }
-                ?: getDisplayName(context, uri)
-
+            val displayName = titleOverride?.takeIf { it.isNotBlank() } ?: getDisplayName(context, uri)
             val title = cleanFileNameToTitle(displayName)
 
             importFromText(context, title, text)
@@ -141,8 +175,10 @@ object AudiobookStore {
             if (file.exists()) {
                 file.delete()
             }
+
+            AudiobookPositionStore.clearPosition(context, id)
         } catch (e: Exception) {
-            // Silent fail for minimal Phase 2.
+            // Silent fail
         }
     }
 
@@ -177,26 +213,16 @@ object AudiobookStore {
                 while (true) {
                     val read = input.read(buffer)
                     if (read == -1) break
-
                     totalBytes += read
-
                     if (totalBytes > MAX_IMPORT_BYTES) {
-                        return Result.failure(
-                            Exception("File is too large. Maximum allowed is about 1,000,000 characters.")
-                        )
+                        return Result.failure(Exception("File is too large. Maximum allowed is about 1,000,000 characters."))
                     }
-
                     output.write(buffer, 0, read)
                 }
             }
 
             val text = output.toString(Charsets.UTF_8.name())
-
-            if (text.isBlank()) {
-                Result.failure(Exception("File is empty"))
-            } else {
-                Result.success(text)
-            }
+            if (text.isBlank()) Result.failure(Exception("File is empty")) else Result.success(text)
         } catch (e: Exception) {
             Result.failure(Exception("Could not read file: ${e.message}"))
         }
@@ -204,20 +230,9 @@ object AudiobookStore {
 
     private fun getDisplayName(context: Context, uri: Uri): String? {
         return try {
-            context.contentResolver.query(
-                uri,
-                null,
-                null,
-                null,
-                null
-            )?.use { cursor ->
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-
-                if (nameIndex >= 0 && cursor.moveToFirst()) {
-                    cursor.getString(nameIndex)
-                } else {
-                    null
-                }
+                if (nameIndex >= 0 && cursor.moveToFirst()) cursor.getString(nameIndex) else null
             }
         } catch (e: Exception) {
             null
@@ -225,29 +240,15 @@ object AudiobookStore {
     }
 
     private fun cleanFileNameToTitle(rawName: String?): String {
-        val name = rawName?.trim()?.ifBlank { null }
-            ?: return "Imported Book"
-
-        val simpleName = name
-            .substringAfterLast('/')
-            .substringAfterLast('\\')
-
-        val withoutExtension = if (simpleName.endsWith(".txt", true)) {
-            simpleName.dropLast(4)
-        } else {
-            simpleName
-        }
-
+        val name = rawName?.trim()?.ifBlank { null } ?: return "Imported Book"
+        val simpleName = name.substringAfterLast('/').substringAfterLast('\\')
+        val withoutExtension = if (simpleName.endsWith(".txt", true)) simpleName.dropLast(4) else simpleName
         return withoutExtension.trim().ifBlank { "Imported Book" }
     }
 
     private fun getDirectory(context: Context): File {
         val directory = File(context.filesDir, DIRECTORY_NAME)
-
-        if (!directory.exists()) {
-            directory.mkdirs()
-        }
-
+        if (!directory.exists()) directory.mkdirs()
         return directory
     }
 
