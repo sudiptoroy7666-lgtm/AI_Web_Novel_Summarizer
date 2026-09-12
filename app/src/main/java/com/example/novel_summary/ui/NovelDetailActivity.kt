@@ -7,6 +7,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.novel_summary.R
 import com.example.novel_summary.data.model.Volume
@@ -96,8 +97,8 @@ class NovelDetailActivity : AppCompatActivity() {
     }
 
     private fun observeVolumes() {
-        volumeJob = CoroutineScope(Dispatchers.Main).launch {
-            viewModel.getVolumesWithStats(novelId).collect { volumeList ->  // Uses new method
+        volumeJob = lifecycleScope.launch {
+            viewModel.getVolumesWithStats(novelId).collect { volumeList ->
                 if (volumeList.isEmpty()) {
                     binding.tvEmptyLibrary.text = getString(R.string.empty_volumes)
                     binding.tvEmptyLibrary.isVisible = true
@@ -105,8 +106,6 @@ class NovelDetailActivity : AppCompatActivity() {
                 } else {
                     binding.tvEmptyLibrary.isVisible = false
                     binding.rvLibrary.isVisible = true
-
-                    // Update adapter type to accept VolumeWithStats
                     (binding.rvLibrary.adapter as? VolumeAdapter)?.submitList(volumeList)
                 }
             }
@@ -127,7 +126,7 @@ class NovelDetailActivity : AppCompatActivity() {
                 val volumeName = editText.text.toString().trim()
                 if (volumeName.isNotEmpty()) {
                     // FIXED: Wrap suspend function in coroutine
-                    CoroutineScope(Dispatchers.IO).launch {
+                    lifecycleScope.launch(Dispatchers.IO) {
                         viewModel.insertVolume(com.example.novel_summary.data.model.Volume(novelId = novelId, volumeName = volumeName))
                         runOnUiThread {
                             ToastUtils.showSuccess(this@NovelDetailActivity, "Volume added successfully")
@@ -168,7 +167,7 @@ class NovelDetailActivity : AppCompatActivity() {
                 val newName = editText.text.toString().trim()
                 if (newName.isNotEmpty()) {
                     // FIXED: Wrap suspend function in coroutine
-                    CoroutineScope(Dispatchers.IO).launch {
+                    lifecycleScope.launch(Dispatchers.IO) {
                         val existingVolume = viewModel.getVolumeByName(novelId, newName)
                         if (existingVolume == null) {
                             viewModel.updateVolume(volume.copy(volumeName = newName))

@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -17,51 +21,93 @@
         android:roundIcon="@drawable/applogo_vector"
         android:supportsRtl="true"
         android:theme="@style/Theme.WebNovelSummarizer"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+
+        <!-- Phase 1: Custom AI API Manager -->
+        <activity
+            android:name=".ui.customai.CustomAiApiManagerActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:exported="false" />
+
+        <!-- Phase 2: Audiobook Manager / Import -->
+        <activity
+            android:name=".ui.audiobook.AudiobookManagerActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.audiobook.AudiobookImportActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Phase 3: Audiobook Player -->
+        <activity
+            android:name=".ui.audiobook.AudiobookPlayerActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:exported="false"
+            android:launchMode="singleTop" />
+
+        <!-- Phase 3: TTS Background Playback Service -->
+        <service
+            android:name=".service.AudiobookTtsService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"
+            android:stopWithTask="false" />
+
         <activity
             android:name=".ui.SettingsActivity"
             android:configChanges="orientation|screenSize|screenLayout"
             android:exported="false" />
-        <!-- Summary Activity (preserves TTS state & summary content) -->
+
         <activity
             android:name=".ui.ActivitySummary"
             android:configChanges="orientation|screenSize|screenLayout"
-            android:exported="false" /> <!-- Library hierarchy activities -->
+            android:exported="false" />
+
         <activity
             android:name=".ui.Activity_Library"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize"
             android:exported="false" />
+
         <activity
             android:name=".ui.NovelDetailActivity"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize"
             android:exported="false" />
+
         <activity
             android:name=".ui.VolumeDetailActivity"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize"
             android:exported="false" />
+
         <activity
             android:name=".ui.ChapterDetailActivity"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize"
-            android:exported="false" /> <!-- History/Bookmarks activities -->
+            android:exported="false" />
+
         <activity
             android:name=".ui.Activity_History"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize"
             android:exported="false" />
+
         <activity
             android:name=".ui.Activity_Boolmarks"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize"
             android:exported="false" />
+
         <activity
             android:name=".ui.MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize"
             android:exported="true">
-            >
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
+
     </application>
 
 </manifest>

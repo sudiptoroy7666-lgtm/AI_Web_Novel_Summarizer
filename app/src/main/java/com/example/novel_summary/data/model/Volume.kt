@@ -2,6 +2,7 @@ package com.example.novel_summary.data.model
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
@@ -13,6 +14,10 @@ import androidx.room.PrimaryKey
             childColumns = ["novelId"],
             onDelete = ForeignKey.CASCADE
         )
+    ],
+    indices = [
+        Index(value = ["novelId"]),
+        Index(value = ["novelId", "volumeName"])
     ]
 )
 data class Volume(

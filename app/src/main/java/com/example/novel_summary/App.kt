@@ -7,10 +7,13 @@ class App : Application() {
 
     companion object {
         lateinit var database: AppDatabase
+        var appContext: Application? = null
+            private set
     }
 
     override fun onCreate() {
         super.onCreate()
+        appContext = this
         database = AppDatabase.getDatabase(this)
     }
 }

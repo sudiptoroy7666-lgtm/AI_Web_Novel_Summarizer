@@ -17,7 +17,7 @@ android {
         minSdk = 28
         targetSdk = 36
         versionCode = 1
-        versionName = "3.0"
+        versionName = "4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -130,6 +130,7 @@ dependencies {
 
     // Jetpack WebKit for modern WebView
     implementation("androidx.webkit:webkit:1.11.0")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Navigation Component (optional but recommended)
     val navVersion = "2.8.5"

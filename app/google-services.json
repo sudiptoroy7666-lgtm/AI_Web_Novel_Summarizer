@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "175959551783",
+    "firebase_url": "https://webnovelsummarizer-default-rtdb.firebaseio.com",
+    "project_id": "webnovelsummarizer",
+    "storage_bucket": "webnovelsummarizer.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:175959551783:android:3ced898b3f3a244c174302",
+        "android_client_info": {
+          "package_name": "com.example.novel_summary"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcvS3V018vYfctkSSxozs-Pzs3kg8bOsk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -20,12 +20,14 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.example.novel_summary.R
 import com.example.novel_summary.data.model.Bookmark
 import com.example.novel_summary.data.model.History
 import com.example.novel_summary.databinding.ActivityMainBinding
 import com.example.novel_summary.ui.viewmodel.MainViewModel
 import com.example.novel_summary.utils.ContentHolder
+import com.example.novel_summary.utils.SummaryContentStore
 import com.example.novel_summary.utils.ToastUtils
 import com.example.novel_summary.utils.UrlUtils
 import com.example.novel_summary.utils.WebViewUtils
@@ -280,10 +282,10 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 currentWebViewJob?.cancel()
-                currentWebViewJob = CoroutineScope(Dispatchers.Main).launch {
+                currentWebViewJob = lifecycleScope.launch(Dispatchers.Main) {
                     view?.evaluateJavascript("(function(){return document.title;})()") { title ->
                         val pageTitle = if (title == "\"\"" || title == "null") UrlUtils.extractTitleFromUrl(url ?: "") else title.trim('"')
-                        if (url != null) CoroutineScope(Dispatchers.IO).launch { viewModel.saveToHistory(History(url = url, title = pageTitle)) }
+                        if (url != null) lifecycleScope.launch(Dispatchers.IO) { viewModel.saveToHistory(History(url = url, title = pageTitle)) }
                     }
                 }
 
@@ -409,13 +411,13 @@ class MainActivity : AppCompatActivity() {
             val currentTitle = binding.webView.title ?: UrlUtils.extractTitleFromUrl(currentUrl)
             if (isBookmarked) {
                 showConfirmationDialog("Remove Bookmark", "Remove this bookmark?") {
-                    CoroutineScope(Dispatchers.IO).launch {
+                    lifecycleScope.launch(Dispatchers.IO) {
                         viewModel.removeBookmark(currentUrl)
                         runOnUiThread { isBookmarked = false; binding.btnBookmark.setImageResource(R.drawable.ic_bookmark_outline); ToastUtils.showSuccess(this@MainActivity, "Bookmark removed") }
                     }
                 }
             } else {
-                CoroutineScope(Dispatchers.IO).launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     viewModel.saveBookmark(Bookmark(url = currentUrl, title = currentTitle))
                     runOnUiThread { isBookmarked = true; binding.btnBookmark.setImageResource(R.drawable.ic_bookmark_filled); ToastUtils.showSuccess(this@MainActivity, "Bookmarked!") }
                 }
@@ -426,7 +428,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateBookmarkState(url: String?) {
         if (url == null) { binding.btnBookmark.isVisible = false; isBookmarked = false; return }
         binding.btnBookmark.isVisible = true
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             val bookmark = viewModel.getBookmarkByUrl(url)
             runOnUiThread {
                 isBookmarked = bookmark != null
@@ -453,13 +455,18 @@ class MainActivity : AppCompatActivity() {
             val url = binding.webView.url ?: return@setOnClickListener
             val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Extracting Content").setMessage("Extracting text from page…").setCancelable(false).create()
             dialog.show()
-            CoroutineScope(Dispatchers.Main).launch {
+            lifecycleScope.launch(Dispatchers.Main) {
                 kotlinx.coroutines.delay(1000)
                 binding.webView.evaluateJavascript(WebViewUtils.extractCleanText(binding.webView)) { content ->
                     dialog.dismiss()
                     if (content != "\"\"" && content != "null" && content.length > 100) {
-                        ContentHolder.setContent(content.trim('"'), url, binding.webView.title ?: "Untitled")
-                        startActivity(Intent(this@MainActivity, ActivitySummary::class.java))
+                        val contentId = SummaryContentStore.writeContent(this@MainActivity, content.trim('"'), url, binding.webView.title ?: "Untitled")
+                        val summaryIntent = Intent(this@MainActivity, ActivitySummary::class.java).apply {
+                            putExtra("summary_content_id", contentId)
+                            putExtra("summary_url", url)
+                            putExtra("summary_title", binding.webView.title ?: "Untitled")
+                        }
+                        startActivity(summaryIntent)
                     } else runOnUiThread { showContentExtractionOptions(url) }
                 }
             }
@@ -476,13 +483,18 @@ class MainActivity : AppCompatActivity() {
     private fun retryContentExtraction(url: String) {
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Retrying…").setMessage("Waiting for content…").setCancelable(false).create()
         dialog.show()
-        CoroutineScope(Dispatchers.Main).launch {
+        lifecycleScope.launch(Dispatchers.Main) {
             kotlinx.coroutines.delay(3000)
             binding.webView.evaluateJavascript(WebViewUtils.extractCleanText(binding.webView)) { content ->
                 dialog.dismiss()
                 if (content != "\"\"" && content != "null" && content.length > 100) {
-                    ContentHolder.setContent(content.trim('"'), url, binding.webView.title ?: "Untitled")
-                    startActivity(Intent(this@MainActivity, ActivitySummary::class.java))
+                    val contentId = SummaryContentStore.writeContent(this@MainActivity, content.trim('"'), url, binding.webView.title ?: "Untitled")
+                    val summaryIntent = Intent(this@MainActivity, ActivitySummary::class.java).apply {
+                        putExtra("summary_content_id", contentId)
+                        putExtra("summary_url", url)
+                        putExtra("summary_title", binding.webView.title ?: "Untitled")
+                    }
+                    startActivity(summaryIntent)
                 } else ToastUtils.showError(this@MainActivity, "Still could not extract. Try manual selection.")
             }
         }
@@ -500,13 +512,21 @@ class MainActivity : AppCompatActivity() {
     private fun extractWithCustomSelector(selector: String) {
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Extracting…").setMessage("Using: $selector").setCancelable(false).create()
         dialog.show()
-        CoroutineScope(Dispatchers.Main).launch {
+        lifecycleScope.launch(Dispatchers.Main) {
             kotlinx.coroutines.delay(500)
             binding.webView.evaluateJavascript("""(function(){try{var el=document.querySelector('$selector');return el?el.innerText.trim():'NOT_FOUND';}catch(e){return 'ERROR: '+e.message;}})()""") { result ->
                 dialog.dismiss()
                 val clean = result.trim('"')
                 if (clean == "NOT_FOUND" || clean.startsWith("ERROR:") || clean.length < 100) ToastUtils.showError(this@MainActivity, "Selector didn't work. Try another.")
-                else { ContentHolder.setContent(clean, binding.webView.url ?: "", binding.webView.title ?: "Untitled"); startActivity(Intent(this@MainActivity, ActivitySummary::class.java)) }
+                else {
+                    val contentId = SummaryContentStore.writeContent(this@MainActivity, clean, binding.webView.url ?: "", binding.webView.title ?: "Untitled")
+                    val summaryIntent = Intent(this@MainActivity, ActivitySummary::class.java).apply {
+                        putExtra("summary_content_id", contentId)
+                        putExtra("summary_url", binding.webView.url ?: "")
+                        putExtra("summary_title", binding.webView.title ?: "Untitled")
+                    }
+                    startActivity(summaryIntent)
+                }
             }
         }
     }

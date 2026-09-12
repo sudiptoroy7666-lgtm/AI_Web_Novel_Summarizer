@@ -1,67 +1,41 @@
 package com.example.novel_summary.utils
 
+import android.content.Context
+import com.example.novel_summary.App
+import java.io.File
+
 /**
- * Singleton to hold large content between activities.
- * This avoids "Transaction too large" error when passing
- * large text content (like novel chapters) via Intent extras.
- *
- * Usage:
- * 1. Before starting ActivitySummary:
- *    ContentHolder.setContent(content, url, title)
- *
- * 2. In ActivitySummary.onCreate():
- *    val data = ContentHolder.getContent()
- *    ContentHolder.clear() // Free memory after reading
+ * Deprecated compatibility wrapper for older code paths.
+ * The app now stores extracted summary content in a cache file instead of a static singleton.
  */
+@Deprecated("Use SummaryContentStore instead.")
 object ContentHolder {
-    private var _content: String = ""
-    private var _url: String = ""
-    private var _title: String = ""
-    private var _timestamp: Long = 0
+    private const val LEGACY_CACHE_FILE = "content_holder_legacy.txt"
 
-    /**
-     * Store content to be passed to another activity
-     */
     fun setContent(content: String, url: String, title: String) {
-        _content = content
-        _url = url
-        _title = title
-        _timestamp = System.currentTimeMillis()
+        val context = App.appContext ?: return
+        SummaryContentStore.writeContent(context, content, url, title)
     }
 
-    /**
-     * Retrieve stored content
-     */
     fun getContent(): ContentData {
-        return ContentData(
-            content = _content,
-            url = _url,
-            title = _title,
-            timestamp = _timestamp
-        )
+        val context = App.appContext ?: return ContentData("", "", "", 0L)
+        val file = File(context.filesDir, LEGACY_CACHE_FILE)
+        if (!file.exists()) return ContentData("", "", "", 0L)
+        val text = file.readText(Charsets.UTF_8)
+        val url = if (text.contains("\nURL:")) text.substringAfter("\nURL:").substringBefore("\nTITLE:") else ""
+        val title = if (text.contains("\nTITLE:")) text.substringAfter("\nTITLE:").substringBefore("\nCONTENT:") else ""
+        val content = if (text.contains("\nCONTENT:")) text.substringAfter("\nCONTENT:") else ""
+        return ContentData(content = content, url = url, title = title, timestamp = System.currentTimeMillis())
     }
 
-    /**
-     * Check if content is available
-     */
-    fun hasContent(): Boolean {
-        return _content.isNotEmpty() && _url.isNotEmpty()
-    }
+    fun hasContent(): Boolean = App.appContext?.let { SummaryContentStore.hasPendingSummary(it) } == true
 
-    /**
-     * Clear stored content to free memory
-     * Always call this after reading content in the target activity
-     */
     fun clear() {
-        _content = ""
-        _url = ""
-        _title = ""
-        _timestamp = 0
+        val context = App.appContext ?: return
+        File(context.filesDir, LEGACY_CACHE_FILE).delete()
+        SummaryContentStore.clearAll(context)
     }
 
-    /**
-     * Data class to hold all content information
-     */
     data class ContentData(
         val content: String,
         val url: String,

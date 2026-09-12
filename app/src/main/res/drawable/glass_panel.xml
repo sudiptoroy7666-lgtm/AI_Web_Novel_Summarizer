@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Enhanced Glass Panel: Higher opacity + gradient fill for "frost" look -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Main glass fill with slight gradient (top-left light to bottom-right dark) -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#25FFFFFF" /> <!-- Increased base opacity -->
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+    
+    <!-- Inner gradient overlay to simulate reflection -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="135"
+                android:startColor="#15FFFFFF"
+                android:endColor="#05FFFFFF"
+                android:type="linear" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+
+    <!-- Crisp white border stroke -->
+    <item>
+        <shape android:shape="rectangle">
+            <stroke
+                android:width="1.5dp"
+                android:color="#50FFFFFF" /> <!-- Brighter stroke -->
+            <solid android:color="#00000000" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+</layer-list>

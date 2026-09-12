@@ -6,6 +6,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.novel_summary.R
 import com.example.novel_summary.data.model.Chapter
@@ -93,7 +94,7 @@ class VolumeDetailActivity : AppCompatActivity() {
     }
 
     private fun observeChapters() {
-        chapterJob = CoroutineScope(Dispatchers.Main).launch {
+        chapterJob = lifecycleScope.launch {
             viewModel.getChaptersByVolumeId(volumeId).collect { chapterList ->
                 if (chapterList.isEmpty()) {
                     binding.tvEmptyLibrary.text = getString(R.string.empty_chapters)
@@ -144,7 +145,7 @@ class VolumeDetailActivity : AppCompatActivity() {
                 val newName = editText.text.toString().trim()
                 if (newName.isNotEmpty()) {
                     // FIXED: Wrap suspend function in coroutine
-                    CoroutineScope(Dispatchers.IO).launch {
+                    lifecycleScope.launch(Dispatchers.IO) {
                         val existingChapter = viewModel.getChapterByName(volumeId, newName)
                         if (existingChapter == null) {
                             viewModel.updateChapter(chapter.copy(chapterName = newName))
